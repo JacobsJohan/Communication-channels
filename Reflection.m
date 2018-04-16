@@ -24,7 +24,7 @@ addpath(genpath(pwd))
 %
 %For non normal total reflection you just have to check if the amplitude after
 %moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) at the point corresponding to
+%reflected(incident one frame before or 2?) at th epoint corresponding to
 %the right angle
 %
 %For non normal non-reflection you just have to check if the amplitude after

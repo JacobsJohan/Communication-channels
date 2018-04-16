@@ -3,10 +3,11 @@ clear
 close all
 addpath(genpath(pwd))
 
-srcLoc=2;
-recLoc= 8;
-srcH=2.5;
-recH=1.5;
+sloc=2;
+Recloc= 8;
+source_h=2.5;
+rec_h=1.5;
+
 
 conf.fmax           = 900e6;
 conf.x_length       = 10;
@@ -18,10 +19,10 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 [ field,conf,T ] = FDTDInit( conf );
 
 % Get indices
-Sindx=meter2index(srcLoc,conf);
-Rindx=meter2index(recLoc,conf);
-Sindy=meter2index(srcH,conf);
-Rindy=meter2index(recH,conf);
+Sindx=meter2index(sloc,conf);
+Rindx=meter2index(Recloc,conf);
+Sindy=meter2index(source_h,conf);
+Rindy=meter2index(rec_h,conf);
 
 c       = 3e8;              %Speed of light
 mu0     = pi*4e-7;          %Permeabillity of free space 
@@ -35,32 +36,34 @@ KE=2.5:0.1:7.5;
 for j=1:numel(KE)
     disp(['Running KE ' num2str(j) '/' num2str(numel(KE))])
 %% Initialising the fields for simulation 
-    conf.fmax           = 900e6;
-    conf.x_length       = 10;
-    conf.y_length       = 10;
-    conf.nrOfFrames     = 500;
-    conf.Resolution_X   = 500;
-    conf.Resolution_Y   = 500;
-    conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
-    [ field,conf,T ] = FDTDInit( conf );
+conf.fmax           = 900e6;
+conf.x_length       = 10;
+conf.y_length       = 10;
+conf.nrOfFrames     = 500;
+conf.Resolution_X   = 500;
+conf.Resolution_Y   = 500;
+conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
+[ field,conf,T ] = FDTDInit( conf );
 
 
-    deltat  = conf.deltat;
-    delta   = conf.delta;
-    Sc      = c*deltat/delta;  	%Courant number
+deltat  = conf.deltat;
+delta   = conf.delta;
+Sc      = c*deltat/delta;  	%Courant number
 
 %% Initialising the different sources 
-    Source = struct;
+Source = struct;
 
-    f = 900e6;
-    Source = addSource( Source,conf,srcH,srcLoc,f,sin(2*pi*f*T));
+f = 900e6;
+Source = addSource( Source,conf,source_h,sloc,f,sin(2*pi*f*T));
 
 %% Simulating losses
-    field(1).SigM(:) = 0;
-    field(1).Sig(:) = 8e-15;
+field(1).SigM(:) = 300;
+field(1).Sig(:) = 300;
 
 %% Filling the field with objects
     %Knife-edge
+    %Both together deliver good results (just don't do sigma on its own)
+    field(1).Sig=draw_rectangle(field(1).Sig,10e10,KE(j),2.5,0.1,5,conf);
     field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,KE(j),2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
 
 %% Simulate field
@@ -117,10 +120,10 @@ for j=1:numel(KE)
         recval(j,i)=prev.Ez(Rindy,Rindx);
         soval(j,i)=prev.Ez(Sindy,Sindx);
     end
-    d1=KE(j)-srcLoc;
-    d2=recLoc-KE(j);
-    alpha=atan((srcH-recH)/(d1+d2));
-    h=5-recH-tan(alpha)*d2;
+    d1=KE(j)-sloc;
+    d2=Recloc-KE(j);
+    alpha=atan((source_h-rec_h)/(d1+d2));
+    h=5-rec_h-tan(alpha)*d2;
     v(j)=h*sqrt(2/lambda*(1/d1+1/d2));
     
 end

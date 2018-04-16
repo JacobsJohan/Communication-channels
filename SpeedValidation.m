@@ -179,15 +179,14 @@ close(v)
 % Let's center our source and take a point at 1m to the right. This yields
 % x=2.5,y=1.5 Indices etc are calculated above
 
-% time=frame-2 because in the first frame, everything is being initialized.
-% In the second frame the source starts transmitting, but there is no 
-% propagation yet. This means we have 2 all zero frames. Since we check the
-% first value that is nonzero, we have to drop 2 frames
-% The propagation distance is the difference in indices between source and
-% point 
+%time=frame-2 because first frame is all zero and
+%because in the first source value is placed after the 1st frame
+%and this is 0. This means we have 2 all zero frames. Since we check the
+%first value that is nonzero, we have to drop 2 frames
+%The propagation distance is the difference in indices between source and
+%point 
 speed = abs(meter2index(1.5,conf)-xind)/(iteration-2);%indexdifference/time
 
-% Remember conf.deltat = conf.delta/3e8/sqrt(2);  
 
 %% Draw and export to movie 
 % plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)

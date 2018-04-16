@@ -88,6 +88,7 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
 E_temp=[];
+E_prev=0
 for i=1:conf.nrOfFrames-1
 %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
 
@@ -161,6 +162,7 @@ for i=1:conf.nrOfFrames-1
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
    E_temp=[E_temp prev.Ez(meter2index(1.5,conf),meter2index(1.5,conf))];
+   
 end
 %% Free videofile
 close(gcf)
