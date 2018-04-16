@@ -3,6 +3,16 @@ clear
 close all
 addpath(genpath(pwd))
 
+%% Description
+% This code is used to simulate the Specific Absorption Rate (SAR) inside a
+% human head. The propagation of the electric field through the cross
+% section of a head is observed. For this we consider different relative
+% permittivities and electric conductivities inside the head. This means
+% that the wave travelling away from the head can propagate in the standard
+% way with little attenuation, but the wave travelling through the head
+% will be strongly attenuated. Part of the wave will be absorbed by the 
+% head.
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 1;
@@ -73,7 +83,6 @@ prev.Hy=field(1).Hy;
 Etest = 0;
 for i=1:conf.nrOfFrames-1
 %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
