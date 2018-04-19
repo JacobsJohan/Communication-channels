@@ -5,9 +5,9 @@ addpath(genpath(pwd))
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
-conf.x_length       = 3;
-conf.y_length       = 3;
-conf.nrOfFrames     = 100;
+conf.x_length       = 1;
+conf.y_length       = 1;
+conf.nrOfFrames     = 25;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -17,8 +17,9 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 Source = struct;
 
 f = 900e6;
-Source = addSource( Source,conf,1,1.5,f,sin(2*pi*f*T) );
-% Source = addSource( Source,conf,2,1.5,f,sin(2*pi*f*T) );
+sX=conf.x_length/2;
+sY=conf.y_length/2;
+Source = addSource( Source,conf,sX,sY,f,sin(2*pi*f*T) );
 
 %% Filling the field with objects
 
@@ -31,10 +32,10 @@ field(1).SigM(:) = 300;
 field(1).Sig(:) = 300;
 
 %% Prep video
-v = VideoWriter('Output','MPEG-4');
-v.Quality = 100; 
-open(v);
-figure()
+% v = VideoWriter('Output','MPEG-4');
+% v.Quality = 100; 
+% open(v);
+% figure()
 pos = get(gcf, 'Position');
 set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
 
@@ -88,6 +89,7 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
 E_temp=[];
+s=size(prev.Ez);
 for i=1:conf.nrOfFrames-1
 %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
 
@@ -109,66 +111,67 @@ for i=1:conf.nrOfFrames-1
        results.Ez(sourceXloc,sourceYloc) = sourceValue;
     end
     
-%Plot calculated fields
-
-% Prepare for plotting
-
-
-    [M,N] = size(results.Ez);
-    [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-                                    linspace(0,conf.y_length,N)...
-                                    );
-
-    ToPrintq=results.Ez;
-    temp = ToPrintq(:,:,20:end);
-    % maxToPrint = max(temp(:));
-    minToPrint = min(temp(:));
-    absMaxToPrint = max(ToPrintq(:));
-
-
-% Print
-    disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
-    surf(X,Y,ToPrintq,...
-            'LineStyle','none',...
-            'FaceColor','interp');
-    hold on 
-    surf(   Xq2,...
-            Yq2,...
-            ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
-            'FaceAlpha','interp',...
-            'AlphaDataMapping','none',...
-            'AlphaData',EPSrelalpha(:,:,1),...
-            'LineStyle','none',...
-            'FaceColor','red');
-    surf(   Xq2,...
-            Yq2,...
-            ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
-            'FaceAlpha','interp',...
-            'AlphaDataMapping','none',...
-            'AlphaData',MUrelalpha(:,:,1),...
-            'LineStyle','none',...
-            'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
-    hold off
-    colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
-    caxis([-0.5,0.5])
-    view(2)
-    frame = getframe;
-    writeVideo(v,frame);
+% %Plot calculated fields
+% 
+% % Prepare for plotting
+% 
+% 
+%     [M,N] = size(results.Ez);
+%     [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
+%                                     linspace(0,conf.y_length,N)...
+%                                     );
+% 
+%     ToPrintq=results.Ez;
+%     temp = ToPrintq(:,:,20:end);
+%     % maxToPrint = max(temp(:));
+%     minToPrint = min(temp(:));
+%     absMaxToPrint = max(ToPrintq(:));
+% 
+% 
+% % Print
+%     disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
+%     surf(X,Y,ToPrintq,...
+%             'LineStyle','none',...
+%             'FaceColor','interp');
+%     hold on 
+%     surf(   Xq2,...
+%             Yq2,...
+%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
+%             'FaceAlpha','interp',...
+%             'AlphaDataMapping','none',...
+%             'AlphaData',EPSrelalpha(:,:,1),...
+%             'LineStyle','none',...
+%             'FaceColor','red');
+%     surf(   Xq2,...
+%             Yq2,...
+%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
+%             'FaceAlpha','interp',...
+%             'AlphaDataMapping','none',...
+%             'AlphaData',MUrelalpha(:,:,1),...
+%             'LineStyle','none',...
+%             'FaceColor','blue');
+% %     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
+%     hold off
+%     colorbar;
+% %     zlim([minToPrint,absMaxToPrint+0.2]);
+%     caxis([-0.5,0.5])
+%     view(2)
+%     frame = getframe;
+%     writeVideo(v,frame);
 
 %Save current fields as old fields for net iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
-%    E_temp=[E_temp prev.Ez(meter2index(1.5,conf),meter2index(1.5,conf))];
+   E_temp=[E_temp; prev.Ez(meter2index(sX,conf),meter2index(sY,conf)+1:end)];
 end
-%% Free videofile
-close(gcf)
-close(v)
+% %% Free videofile
+% close(gcf)
+% close(v)
 
-
-% figure
-% plot(E_temp)
+ratio=E_temp(10,1:end-1)./E_temp(10,2:end);
+ratio(find(ratio==inf)) = 0;
+figure
+plot(ratio)
 
 %% Draw and export to movie 
 % plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)

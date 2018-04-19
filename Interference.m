@@ -3,6 +3,9 @@ clear
 close all
 addpath(genpath(pwd))
 
+
+%%Load data from one source
+load('OneSource')
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 3;
@@ -17,23 +20,20 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 Source = struct;
 
 f = 900e6;
+% Base source
 Source = addSource( Source,conf,1,1.5,f,sin(2*pi*f*T) );
-Source = addSource( Source,conf,2,1.5,f,sin(2*pi*f*T) );%+pi for anti-phase
-
-%% Filling the field with objects
-
-%Knife-edge
-% field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,7.5,2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
-
-
+% Source in phase
+Source = addSource( Source,conf,2,1.5,f,sin(2*pi*f*T) );
+% Source i anti-phase
+% Source = addSource( Source,conf,2,1.5,f,sin(2*pi*f*T+pi));
 %% Simulating losses
 field(1).SigM(:) = 300;
 field(1).Sig(:) = 300;
 
 %% Prep video
-v = VideoWriter('Output','MPEG-4');
-v.Quality = 100; 
-open(v);
+% v = VideoWriter('Output_Interference','MPEG-4');
+% v.Quality = 100; 
+% open(v);
 figure()
 pos = get(gcf, 'Position');
 set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
@@ -87,8 +87,7 @@ prev.Ez=field(1).Ez;
 prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
-E_temp=[];
-E_prev=0
+E_temp=[]; %Initialize matrix to keep values at middel position between the 2 sources
 for i=1:conf.nrOfFrames-1
 %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
 
@@ -127,50 +126,72 @@ for i=1:conf.nrOfFrames-1
     absMaxToPrint = max(ToPrintq(:));
 
 
-% Print
-    disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
-    surf(X,Y,ToPrintq,...
-            'LineStyle','none',...
-            'FaceColor','interp');
-    hold on 
-    surf(   Xq2,...
-            Yq2,...
-            ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
-            'FaceAlpha','interp',...
-            'AlphaDataMapping','none',...
-            'AlphaData',EPSrelalpha(:,:,1),...
-            'LineStyle','none',...
-            'FaceColor','red');
-    surf(   Xq2,...
-            Yq2,...
-            ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
-            'FaceAlpha','interp',...
-            'AlphaDataMapping','none',...
-            'AlphaData',MUrelalpha(:,:,1),...
-            'LineStyle','none',...
-            'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
-    hold off
-    colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
-    caxis([-0.5,0.5])
-    view(2)
-    frame = getframe;
-    writeVideo(v,frame);
+% % Print
+%     disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
+%     surf(X,Y,ToPrintq,...
+%             'LineStyle','none',...
+%             'FaceColor','interp');
+%     hold on 
+%     surf(   Xq2,...
+%             Yq2,...
+%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
+%             'FaceAlpha','interp',...
+%             'AlphaDataMapping','none',...
+%             'AlphaData',EPSrelalpha(:,:,1),...
+%             'LineStyle','none',...
+%             'FaceColor','red');
+%     surf(   Xq2,...
+%             Yq2,...
+%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
+%             'FaceAlpha','interp',...
+%             'AlphaDataMapping','none',...
+%             'AlphaData',MUrelalpha(:,:,1),...
+%             'LineStyle','none',...
+%             'FaceColor','blue');
+% %     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
+%     hold off
+%     colorbar;
+% %     zlim([minToPrint,absMaxToPrint+0.2]);
+%     caxis([-0.5,0.5])
+%     view(2)
+%     frame = getframe;
+%     writeVideo(v,frame);
 
 %Save current fields as old fields for net iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
-   E_temp=[E_temp prev.Ez(meter2index(1.5,conf),meter2index(1.5,conf))];
+%    Saving current field in middle between 2 sources.
+   E_temp=[E_temp prev.Ez(meter2index(1.5,conf)+1,meter2index(1.5,conf))];
    
 end
 %% Free videofile
-close(gcf)
-close(v)
-
+% close(gcf)
+% close(v)
 
 figure
 plot(E_temp)
+title('E-field between 2 sources in phase')
+xlabel('Frame number')
+ylabel('E_z-field (V/m)')
+figure
+plot(E_temp./2)
+hold on
+plot(OneSource,'*')
+legend('Halved interfered E_z-field','E_z -field for one source')
+title({'E-field halved between 2 sources in phase' , 'compared to field for 1 source'})
+xlabel('Frame number')
+ylabel('E_z-field (V/m)')
+
+figure
+plot(E_temp(1:65))
+hold on
+plot(OneSource(1:65))
+plot(E_temp(1:65)./2,'bl*')
+legend('E_z-field for 2 interfering sources','E_z -field for one source','For 2 sources, halved')
+title({'E-field in middle between 2 sources in phase,' , 'compared to field for 1 source'})
+xlabel('Frame number')
+ylabel('E_z-field (V/m)')
+
 
 %% Draw and export to movie 
 % plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
