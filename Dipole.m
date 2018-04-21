@@ -5,34 +5,38 @@ addpath(genpath(pwd))
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
-conf.x_length       = 3;
-conf.y_length       = 3;
+conf.x_length       = 1;
+conf.y_length       = 1;
 conf.nrOfFrames     = 50;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
-conf.ToPrint        = 'Hx';  %Needs to be field of the structure 'Field'  
+conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf );
 
 %% Initialising the different sources 
 Source = struct;
 
 f = 900e6; %freq of source
-sourceX = 1.5; %Horizontal
-sourceY = 1;   %Vertical
-Source = addSource( Source,conf,sourceY,sourceX,f,(1-2*(pi*f*T).^2).*exp(-(pi*f*T).^2)); %Gaussian pulse
-
-
+sourceX = 0.5; %Horizontal
+sourceY = 0.5;   %Vertical
+% Source = addSource( Source,conf,sourceY,sourceX,f,(1-2*(pi*f*T).^2).*exp(-(pi*f*T).^2)); %Gaussian pulse
+Source = addSource( Source,conf,sourceY,sourceX,f,zeros(1,numel(T))); %Gaussian pulse
+fi=500e06;
+i=sin(2*pi*fi*T);
 %% Filling the field with objects
 
-% Example of adjusting a part of the relative permittivity. 
-% Same principle holds for other spatial properties.
-% field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,7.5,2.5,0.1,5,conf);
-
-
+x1=0.5;
+y1= 0.25;
+y2=0.25+0.01+1/12;
+thick=0.01;
+height=1/6;
+field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,x1,y2,thick,height,conf);
+field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,x1,y1,thick,height,conf);
 %% Simulating losses
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
 field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
-
+field(1).Sig = draw_rectangle(field(1).Sig,10^10,x1,y2,thick,height,conf);
+field(1).Sig = draw_rectangle(field(1).Sig,10^10,x1,y1,thick,height,conf);
 %% Prepare video
 v = VideoWriter('Dipole','MPEG-4');
 v.Quality = 100; 

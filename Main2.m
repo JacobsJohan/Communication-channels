@@ -120,7 +120,7 @@ for i=1:conf.nrOfFrames-1
 % Prepare for plotting
     [M,N] = size(results.(conf.ToPrint));
     [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
-        slinspace(0,conf.y_length,M));
+        linspace(0,conf.y_length,M));
 
     ToPrintq=results.(conf.ToPrint);
     absMaxToPrint = max(ToPrintq(:));
