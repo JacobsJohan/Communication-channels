@@ -36,8 +36,8 @@ field(1).Sig(:) = 300;
 % v.Quality = 100; 
 % open(v);
 % figure()
-pos = get(gcf, 'Position');
-set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
+% pos = get(gcf, 'Position');
+% set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
 
 EpsRel = field(1).EpsRel();
 MuRel = field(1).MuRel();
@@ -89,7 +89,7 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
 E_temp=[];
-s=size(prev.Ez);
+sz=size(prev.Ez);
 for i=1:conf.nrOfFrames-1
 %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
 
@@ -116,12 +116,10 @@ for i=1:conf.nrOfFrames-1
 % % Prepare for plotting
 % 
 % 
-%     [M,N] = size(results.Ez);
-%     [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-%                                     linspace(0,conf.y_length,N)...
-%                                     );
+%     [M,N] = size(results.(conf.ToPrint));
+%     [X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
 % 
-%     ToPrintq=results.Ez;
+%     ToPrintq=results.(conf.ToPrint);
 %     temp = ToPrintq(:,:,20:end);
 %     % maxToPrint = max(temp(:));
 %     minToPrint = min(temp(:));
@@ -162,16 +160,25 @@ for i=1:conf.nrOfFrames-1
 %Save current fields as old fields for net iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
-   E_temp=[E_temp; prev.Ez(meter2index(sX,conf),meter2index(sY,conf)+1:end)];
+%    E_temp=[E_temp; prev.Ez(meter2index(sX,conf),meter2index(sY,conf)+1:end)];
+    if i>=2 && i < sz(1)/2 && i< sz(2)/2
+        nonZero(i)=numel(find(prev.Ez));  
+        E_fields(:,:,i)=prev.Ez; %Used to see the evolution manually
+        E_temp=[E_temp prev.Ez(meter2index(sX,conf)+i-1,meter2index(sY,conf)+1)]; %Save E_field evolution on 1 row.
+    end
 end
+
 % %% Free videofile
 % close(gcf)
 % close(v)
+% 
 
-ratio=E_temp(10,1:end-1)./E_temp(10,2:end);
-ratio(find(ratio==inf)) = 0;
+%Try 2
+ratio = E_temp(2:end)./ E_temp(1:end-1);
 figure
 plot(ratio)
+
+mainRatio = E_temp(2:end)./ E_temp(1); %Compare with starting value;
 
 %% Draw and export to movie 
 % plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)

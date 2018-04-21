@@ -6,12 +6,10 @@ function [] = plotAndToVid2(filename,field,conf,plotMax,plotMin)
 EpsRel = field(1).EpsRel();
 MuRel = field(1).MuRel();
 
-[M,N] = size(result.Ez);
-[X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-                                linspace(0,conf.y_length,N)...
-                                );
+[M,N] = size(results.(conf.ToPrint));
+[X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
 
-ToPrintq=result.Ez;
+ToPrintq=result.(conf.ToPrint);
 
 [M,N,T] = size(EpsRel);
 [X2,Y2]         = meshgrid(      linspace(0,conf.x_length,M),...

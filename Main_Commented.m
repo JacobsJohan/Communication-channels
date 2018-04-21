@@ -23,7 +23,7 @@ Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
 
 %% Filling the field with objects
 
-% Way of adjusting a part of the relative permittivity. 
+% Example of adjusting a part of the relative permittivity. 
 % Same principle holds for other spatial properties.
 % field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,7.5,2.5,0.1,5,conf);
 
@@ -95,9 +95,8 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
 % Prepare for plotting
-[M,N] = size(results.Ez);
-[X,Y] = meshgrid(linspace(0,conf.x_length,M), linspace(0,conf.y_length,N));
-
+[M,N] = size(results.(conf.ToPrint));
+[X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
 
 
 for i=1:conf.nrOfFrames-1
@@ -136,7 +135,7 @@ for i=1:conf.nrOfFrames-1
             'AlphaDataMapping','none',...
             'AlphaData',EPSrelalpha(:,:,1),...
             'LineStyle','none',...
-            'FaceColor','red');.
+            'FaceColor','red');
     %Display relative permeability
     surf(   Xq2,...
             Yq2,...

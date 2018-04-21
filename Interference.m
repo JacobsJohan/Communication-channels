@@ -114,12 +114,11 @@ for i=1:conf.nrOfFrames-1
 % Prepare for plotting
 
 
-    [M,N] = size(results.Ez);
-    [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-                                    linspace(0,conf.y_length,N)...
-                                    );
+    [M,N] = size(results.(conf.ToPrint));
+    [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+        linspace(0,conf.y_length,M));
 
-    ToPrintq=results.Ez;
+    ToPrintq=results.(conf.ToPrint);
     temp = ToPrintq(:,:,20:end);
     % maxToPrint = max(temp(:));
     minToPrint = min(temp(:));

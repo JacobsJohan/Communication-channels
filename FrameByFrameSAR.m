@@ -99,12 +99,11 @@ for i=1:conf.nrOfFrames-1
     EpsRel = field(1).EpsRel();
     MuRel = field(1).MuRel();
 
-    [M,N] = size(results.Ez);
-    [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-                                    linspace(0,conf.y_length,N)...
-                                    );
+    [M,N] = size(results.(conf.ToPrint));
+    [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+                   linspace(0,conf.y_length,M));
 
-    ToPrintq=results.Ez;
+    ToPrintq=results.(conf.ToPrint);
 
     [M,N,T] = size(EpsRel);
     [X2,Y2]         = meshgrid(      linspace(0,conf.x_length,M),...
