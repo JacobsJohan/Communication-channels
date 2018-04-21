@@ -3,35 +3,28 @@ clear
 close all
 addpath(genpath(pwd))
 
-%PROBLEM: De amplitude wijzigt, er zitten erges losses in denkik... Ale als
-%ge de amplitude van 2 punte naast elkaar neemt dan is de ene ni de waarde
-%van het andere vanuit de vorige frame wa ik wel zou verwachten... Iemand
-%een oplossing?
+% NOTE:
+% For comments and info on the general working of the code please check teh
+% file main_commented. The structure is a bit different but the principles
+% are the same. The comment mentioned here are only those specifically for
+% this script.
 
-%% Normal total reflection
-%
-%For normal total reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?)
-%
-%For normal non-reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) and the amplitude right behind
-%the object (very thin)
+% If the user is only interested in the outcome rather than in the videos,
+% 'Reflection_Calc' is recommended.
 
 
-%% Non normal reflection
+%% Plan/Reasoning
 %
-%For non normal total reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) at th epoint corresponding to
-%the right angle
+% For normal total reflection you just have to check if the amplitude at
+% the reflective object after reflection is different from the amplitude 
+% without reflective object. Also one can check the value of the E-field in
+% teh reflective object.
 %
-%For non normal non-reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) corresponding to the right
-%angle and the amplitude right behind the object (very thin)(in the
-%direction of the incident wave)
+% For non-normal reflection the amplitudes around the point of reflection
+% are observed and compared to simulations without refleective object.
+% Again the values inside the object of reflection can be checked.
+
+% To generate an accompanying video, please refer to 'Reflection_Visual'
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
@@ -47,32 +40,24 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 Source = struct;
 
 f = 900e6;
-sourceY = 0.5;
-Source = addSource( Source,conf,sourceY,0.5,f,sin(2*pi*f*T) );
-indY = meter2index(sourceY,conf);
+sourceY = 0.5; %For perpendicular
+% sourceY = 0.2;      %For angle
+Source = addSource( Source,conf,sourceY,0.5,f,sin(2*pi*f*T));
+indY = meter2index(0.5,conf); %Check is always performed at this Y index.
+indX= meter2index(0.65,conf)-1; %0.65=0.7-0.1/2
 
-checking=1;%Boolean
-reflection=0; %Boolean
+
+
 %% Filling the field with objects
-
-%Full reflection normal:
  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,0.7,sourceY,0.1,3,conf);
-%Partial reflection normal
-%  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50,1.5,1.5,0.01,3,conf);
-
-%Full reflection non normal
-%  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,1.5,2,0.1,3,conf);
-
-%Partial reflection non normal
-%  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50,1.5,2,0.01,3,conf);
 
 
 %% Simulating losses
-% field(1).SigM(:) = 300;
-% field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Prep video
-v = VideoWriter('Output','MPEG-4');
+v = VideoWriter('Reflection','MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()
@@ -132,7 +117,6 @@ magnitudebefore=0;
 magnitudeafter=0;
 
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -163,8 +147,6 @@ for i=1:conf.nrOfFrames-1
 
     ToPrintq=results.(conf.ToPrint);
     temp = ToPrintq(:,:,20:end);
-    % maxToPrint = max(temp(:));
-    minToPrint = min(temp(:));
     absMaxToPrint = max(ToPrintq(:));
 
 
@@ -190,55 +172,19 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
     caxis([-0.5,0.5])
     view(2)
     frame = getframe;
     writeVideo(v,frame);
-
-%Save current fields as old fields for net iteration
+    
+    %Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
-
-    prev.Ez(indY,18)
-    
-%     prev.Ez(16,16)
-%     prev.Ez(16,15)
-    
-%     Ekeep(i) = max(max(abs(prev.Ez)));
-%     Hxkeep(i) = max(max(abs(prev.Hx)));
-%     Hykeep(i) = max(max(abs(prev.Hy)));
-%     Eprev(1,i) = prev.Ez(16,16);
-%     Eprev(2,i) = prev.Ez(16,15);
-%     Eprev(3,i) = prev.Ez(16,14);
 end
 %% Free videofile
 close(gcf)
 close(v)
 
-% incoming
-% magnitudeafter-magnitudebefore
-% 
-% figure
-% plot(Ekeep)
-% figure
-% plot(Hxkeep)
-% hold on
-% stem(Hykeep)
-% 
-% figure
-% plot(Eprev(1,:))
-% hold on
-% plot(Eprev(2,:))
-% hold on
-% plot(Eprev(3,:))
-% % 
-% ratio1 = Eprev(1,2:9)./Eprev(2,3:10);
-% ratio2 = Eprev(2,3:10)./Eprev(3,4:11);
-
-
-%% Draw and export to movie 
-% plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
+%% Free path
 rmpath(genpath(pwd))

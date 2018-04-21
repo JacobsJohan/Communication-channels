@@ -3,6 +3,8 @@ clear
 close all
 addpath(genpath(pwd))
 
+%Commented version of this is main_commented
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 3;
@@ -29,8 +31,8 @@ Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
 
 
 %% Simulating losses
-field(1).SigM(:) = 300;
-field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Prepare video
 v = VideoWriter('Output','MPEG-4');
@@ -121,8 +123,6 @@ for i=1:conf.nrOfFrames-1
         slinspace(0,conf.y_length,M));
 
     ToPrintq=results.(conf.ToPrint);
-%     temp = ToPrintq(:,:,20:end);
-%     minToPrint = min(temp(:));
     absMaxToPrint = max(ToPrintq(:));
 
 
@@ -148,26 +148,19 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
     caxis([-0.5,0.5])
     view(2)
     frame = getframe;
     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
 end
 %% Free videofile
 close(gcf)
 close(v)
 
-
-% figure
-% plot(E_temp)
-
-%% Draw and export to movie 
-% plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
+%% Release pah
 rmpath(genpath(pwd))

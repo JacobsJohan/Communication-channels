@@ -1,73 +1,47 @@
+clc
 clear
 close all
-clc
 addpath(genpath(pwd))
-%% Dielectric slab
-% The dielectic slab consists of 3 layers of dielectrics, each a different
-% dielectric constant and therefore a different refraction index. To get
-% internal reflection, the dielectric index of the middle layer must be
-% (slightky) larger than the other 2. Here the assumtion is made that all
-% relative permablilities are the same.
 
 %% Initialising the fields for simulation 
-conf.fmax           = 2e09;
-conf.x_length       = 1;
-conf.y_length       = 1;
-conf.nrOfFrames     = 150;
+conf.fmax           = 900e6;
+conf.x_length       = 3;
+conf.y_length       = 3;
+conf.nrOfFrames     = 50;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
-conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
+conf.ToPrint        = 'Hx';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf );
 
 %% Initialising the different sources 
 Source = struct;
 
-f = 2e09;
-%0° angle
-xloc = 0.1;
-yloc = 0.5; 
- internal=0;
-% %some angle
-% xloc = 0.1;
-% yloc = 0.3; 
- internal=0;
-% %other angle
-% xloc = 0.4;
-% yloc = 0.5; 
-% internal=1; %We place the source at input to get high input angles. Therefore we clear shielding
-Source = addSource( Source,conf,yloc,xloc,f,sin(2*pi*f*T) );
+f = 900e6; %freq of source
+sourceX = 1.5; %Horizontal
+sourceY = 1;   %Vertical
+Source = addSource( Source,conf,sourceY,sourceX,f,(1-2*(pi*f*T).^2).*exp(-(pi*f*T).^2)); %Gaussian pulse
+
 
 %% Filling the field with objects
-middleX=0.7;
-slabL=0.7;
-slabT=0.1;
-%To only study the influence of the right angels, we will shield the side
-%of the waveguide
 
-if ~internal
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,200,middleX,0.655,slabL,0.01,conf); %Isolating shield around wire
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,200,0.7-0.35-0.005,0.6,0.01,0.11,conf); %Isolate upper input
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,200,0.7-0.35-0.005,0.4,0.01,0.11,conf); %Isolate bottom input
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,200,middleX,0.345,slabL,0.01,conf); %Isolating shield around wire
-end
-
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,2,middleX,0.6,slabL,slabT,conf); %Upper
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,5,middleX,0.5,slabL,slabT,conf); %Middle
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,2,middleX,0.4,slabL,slabT,conf); %Bottom
+% Example of adjusting a part of the relative permittivity. 
+% Same principle holds for other spatial properties.
+% field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,7.5,2.5,0.1,5,conf);
 
 
 %% Simulating losses
-field(1).SigM(:) = 300;
-field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
-%% Prep video
-v = VideoWriter('DSangle','MPEG-4');
+%% Prepare video
+v = VideoWriter('Dipole','MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()
 pos = get(gcf, 'Position');
 set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
 
+%Interpolate spatial properties for plotting
 EpsRel = field(1).EpsRel();
 MuRel = field(1).MuRel();
 
@@ -100,6 +74,7 @@ SIG     = field(1).Sig(1:2:end,1:2:end);
 SIGm    = field(1).SigM(1:2:end,1:2:end);
 EPSrel  = field(1).EpsRel(1:2:end,1:2:end);
 
+%Calculate constants used in FDTD algorithm
 CHXH = (1-SIGm(:,end-1).*deltat/2./MUXrel)./(1+SIGm(:,end-1).*deltat/2./MUXrel);
 CHXE = (Sc/Z0)./MUXrel * 1./(1+SIGm(:,end-1).*deltat/2./MUXrel);
 CHYH = (1-SIGm(end-1,:).*deltat/2./MUYrel)./(1+SIGm(end-1,:).*deltat/2./MUYrel);
@@ -107,19 +82,25 @@ CHYE = (Sc/Z0)./MUYrel * 1./(1+SIGm(end-1,:).*deltat/2./MUYrel);
 CEZE = (1-deltat./2*SIG./EPSrel) ./ (1+deltat/2*SIG./EPSrel);
 CEZH = 1./(1+deltat/2*SIG./EPSrel) * Z0*Sc./EPSrel;
 
+%Initializing results
 results=struct;
-results.Ez=field(1).Ez;
+results.Ez=field(1).Ez;%All 3 are initialized with right dimensions
+... and all zero
 results.Hx=field(1).Hx;
 results.Hy=field(1).Hy;
 
+%Initializing memoryMatrices to store results from previous time-instance
 prev=struct;
 prev.Ez=field(1).Ez;
 prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
-for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
+% Prepare for plotting
+[M,N] = size(results.(conf.ToPrint));
+[X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
 
+
+for i=1:conf.nrOfFrames-1
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -138,26 +119,16 @@ for i=1:conf.nrOfFrames-1
        results.Ez(sourceXloc,sourceYloc) = sourceValue;
     end
     
-%Plot calculated fields
-
-% Prepare for plotting
-
-
-    [M,N] = size(results.(conf.ToPrint));
-    [X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
-
-    ToPrintq=results.(conf.ToPrint);
-    temp = ToPrintq(:,:,20:end);
-    minToPrint = min(temp(:));
+%Plot calculated fields   
+    ToPrintq=results.(conf.ToPrint);%Choose field to plot
     absMaxToPrint = max(ToPrintq(:));
-
-
 % Print
     disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
     surf(X,Y,ToPrintq,...
             'LineStyle','none',...
             'FaceColor','interp');
     hold on 
+    %Display relative permittivity
     surf(   Xq2,...
             Yq2,...
             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
@@ -166,6 +137,7 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',EPSrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','red');
+    %Display relative permeability
     surf(   Xq2,...
             Yq2,...
             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
@@ -174,22 +146,24 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
-    caxis([-0.5,0.5])
+    if conf.ToPrint=='Ez'
+        caxis([-0.5,0.5])
+    else
+        caxis([-0.001,0.001])
+    end
     view(2)
     frame = getframe;
     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+    %Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
-      
 end
 %% Free videofile
 close(gcf)
 close(v)
 
-%% Draw and export to movie 
+%% Release path
+disp(['Note: if you look at the Hx and Hy field you see that they are not isotropic'])
 rmpath(genpath(pwd))

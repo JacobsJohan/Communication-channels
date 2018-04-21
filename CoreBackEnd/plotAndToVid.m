@@ -1,6 +1,6 @@
 function [] = plotAndToVid(filename,field,conf,plotMax,plotMin)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+% Functions plots field with the characteristics given by conf and writes
+% frames to video with name 'filename'.
 %% Resize fields 
 
 for i = 1:numel(field)
@@ -25,10 +25,11 @@ ToPrintq        = interp3(X,Y,Z,V,Xq,Yq,Zq);
 [Xq2,Yq2,Zq2]       = meshgrid(     linspace(0,conf.x_length,conf.Resolution_X),...
                                     linspace(0,conf.y_length,conf.Resolution_Y),...
                                     linspace(0,conf.deltat*T,conf.Resolution_T)); 
-                    
+% Interpolate spatial characteristics                 
 EPSrelalpha     = (interp3(X2,Y2,Z2,EpsRel,Xq2,Yq2,Zq2) -1) /   (max(EpsRel(:))-1)/2.5;
 MUrelalpha      = (interp3(X2,Y2,Z2,MuRel,Xq2,Yq2,Zq2)  -1) /   (max(MuRel(:))-1)/2.5;
 
+%Select field to print
 temp = ToPrintq(:,:,20:end);
 maxToPrint = max(temp(:));
 minToPrint = min(temp(:));
@@ -36,12 +37,15 @@ absMaxToPrint = max(ToPrintq(:));
 
 
 %% Print
+%Prepare video
 v = VideoWriter(filename,'MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()
 pos = get(gcf, 'Position');
 set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
+
+% Print frames and write them to video
 for i = 1:conf.Resolution_T
     disp(['Frame: ',num2str(i),' / ',num2str(conf.Resolution_T)])
     surf(Xq(:,:,i),Yq(:,:,i),ToPrintq(:,:,i),...
@@ -75,6 +79,7 @@ for i = 1:conf.Resolution_T
     %frame = im2frame(img);
     writeVideo(v,frame);
 end
+% Free video
 close(gcf)
 close(v)
 

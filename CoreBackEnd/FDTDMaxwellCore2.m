@@ -1,4 +1,5 @@
 function [ results ] = FDTDMaxwellCore2(oldvalues,conf,Source,CHXH,CHXE,CHYH,CHYE)
+%% Calculation of fields.
     disp([num2str(i),' / ',num2str(conf.numberOfFrames)])
     results.Hx(:,:) =    CHXH.*      field(i).Hx(:,:) -...
                             CHXE.*(     field(i).Ez(:,(1:end-1)+1)  -   field(i).Ez(:,1:end-1)  );

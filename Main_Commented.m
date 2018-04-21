@@ -7,7 +7,7 @@ addpath(genpath(pwd))
 conf.fmax           = 900e6;
 conf.x_length       = 3;
 conf.y_length       = 3;
-conf.nrOfFrames     = 100;
+conf.nrOfFrames     = 50;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -29,8 +29,8 @@ Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
 
 
 %% Simulating losses
-field(1).SigM(:) = 300;
-field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Prepare video
 v = VideoWriter('Output','MPEG-4');
@@ -145,10 +145,12 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
+    %Other properties of the space can also be plotted in similar way as
+    %EPSrel and MUrel.
     hold off
     colorbar;
-    caxis([-0.5,0.5])
-    view(2)
+    caxis([-0.5,0.5]) %Set up color bar
+    view(2)     %View from top
     frame = getframe;
     writeVideo(v,frame);
 

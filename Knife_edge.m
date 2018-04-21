@@ -3,6 +3,15 @@ clear
 close all
 addpath(genpath(pwd))
 
+% NOTE:
+% For comments and info on the general working of the code please check teh
+% file main_commented. The structure is a bit different but the principles
+% are the same. The comment mentioned here are only those specifically for
+% this script.
+
+%% Initialisations
+
+%Locations and heights of TX and RX
 sloc=2;
 Recloc= 8;
 source_h=2.5;
@@ -18,12 +27,13 @@ conf.Resolution_Y   = 500;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf );
 
-% Get indices
+%% Get indices
 Sindx=meter2index(sloc,conf);
 Rindx=meter2index(Recloc,conf);
 Sindy=meter2index(source_h,conf);
 Rindy=meter2index(rec_h,conf);
 
+%% Constants
 c       = 3e8;              %Speed of light
 mu0     = pi*4e-7;          %Permeabillity of free space 
 eps0    = 1/mu0/c/c;        %Permitivity of free space 
@@ -31,8 +41,9 @@ Z0      = sqrt(mu0/eps0);   %Free space impedance
 
 lambda=c/conf.fmax;
 
+%% Range of position building
 KE=2.5:0.1:7.5;
-%% for loop over location of 
+%% for loop over location of building
 for j=1:numel(KE)
     disp(['Running KE ' num2str(j) '/' num2str(numel(KE))])
 %% Initialising the fields for simulation 
@@ -50,15 +61,14 @@ deltat  = conf.deltat;
 delta   = conf.delta;
 Sc      = c*deltat/delta;  	%Courant number
 
-%% Initialising the different sources 
+%% Initialising the sources
 Source = struct;
-
 f = 900e6;
 Source = addSource( Source,conf,source_h,sloc,f,sin(2*pi*f*T));
 
 %% Simulating losses
-field(1).SigM(:) = 300;
-field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Filling the field with objects
     %Knife-edge
@@ -93,8 +103,6 @@ field(1).Sig(:) = 300;
 
 
     for i=1:conf.nrOfFrames-1
-    %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
     %%Calculate new fields
         results.Hx =    CHXH.*prev.Hx -...
                         CHXE.*(prev.Ez(:,(1:end-1)+1) - prev.Ez(:,1:end-1)  );
@@ -114,7 +122,7 @@ field(1).Sig(:) = 300;
     
     
 
-    %Save current fields as old fields for net iteration
+    %Save current fields as old fields for next iteration
         prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     %Update values for reciever
         recval(j,i)=prev.Ez(Rindy,Rindx);
@@ -128,7 +136,7 @@ field(1).Sig(:) = 300;
     
 end
 
-%Sort results
+
 rec = max(abs(recval),[],2);
 src = max(abs(soval),[],2);
 ratio=rec./src;
@@ -143,7 +151,7 @@ v2 = v2(idx,:);
 %Theory
 vth=5:0.1:13;
 
-Fv=1./(2*pi^2*vth.^2);%Already squared and absd
+Fv=1./(2*pi^2*vth.^2); %Includes already squaring and abs
 Le=10*log10(Fv);
 
 %Plot results
@@ -156,4 +164,5 @@ hold on
 plot(vth,Le)
 legend('Simulation result','Theory')
 
+%% Free path
 rmpath(genpath(pwd))

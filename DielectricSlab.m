@@ -2,6 +2,13 @@ clear
 close all
 clc
 addpath(genpath(pwd))
+
+% NOTE:
+% For comments and info on the general working of the code please check teh
+% file main_commented. The structure is a bit different but the principles
+% are the same. The comment mentioned here are only those specifically for
+% this script.
+
 %% Dielectric slab
 % The dielectic slab consists of 3 layers of dielectrics, each a different
 % dielectric constant and therefore a different refraction index. To get
@@ -44,6 +51,14 @@ Source = addSource( Source,conf,yloc,xloc,f,sin(2*pi*f*T) );
 middleX=0.7;
 slabL=0.7;
 slabT=0.1;
+
+% NOTE:
+% The dimensions of the slab are much to large to be realistic. However due
+% to the goal and the nature of the simulation, it is okay. If we would
+% make it small, it would not be properly visible or the reflections would
+% bother the main goal of the simulation too much. The main properties 
+% still hold so we can use this as a model.
+
 %To only study the influence of the right angels, we will shield the side
 %of the waveguide
 
@@ -178,16 +193,14 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
     caxis([-0.5,0.5])
     view(2)
     frame = getframe;
     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
       
 end

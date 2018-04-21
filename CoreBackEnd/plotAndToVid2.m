@@ -1,6 +1,9 @@
 function [] = plotAndToVid2(filename,field,conf,plotMax,plotMin)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+% Functions plots field with the characteristics given by conf and writes
+% frames to video with name 'filename'.
+
+%Note this is the same as plotAndToVid but without interpolation and for 1
+%frame. Not used in practice.
 % Prepare for plotting
 
 EpsRel = field(1).EpsRel();

@@ -3,35 +3,25 @@ clear
 close all
 addpath(genpath(pwd))
 
-%PROBLEM: De amplitude wijzigt, er zitten erges losses in denkik... Ale als
-%ge de amplitude van 2 punte naast elkaar neemt dan is de ene ni de waarde
-%van het andere vanuit de vorige frame wa ik wel zou verwachten... Iemand
-%een oplossing?
+% NOTE:
+% For comments and info on the general working of the code please check teh
+% file main_commented. The structure is a bit different but the principles
+% are the same. The comment mentioned here are only those specifically for
+% this script.
 
-%% Normal total reflection
+%% Plan/Reasoning
 %
-%For normal total reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?)
+% For normal total reflection you just have to check if the amplitude at
+% the reflective object after reflection is different from the amplitude 
+% without reflective object. Also one can check the value of the E-field in
+% teh reflective object.
 %
-%For normal non-reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) and the amplitude right behind
-%the object (very thin)
+% For non-normal reflection the amplitudes around the point of reflection
+% are observed and compared to simulations without refleective object.
+% Again the values inside the object of reflection can be checked.
 
+% To generate an accompanying video, please refer to 'Reflection_Visual'
 
-%% Non normal reflection
-%
-%For non normal total reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) at th epoint corresponding to
-%the right angle
-%
-%For non normal non-reflection you just have to check if the amplitude after
-%moment of reflection is the sum of the incident amplitude and the one
-%reflected(incident one frame before or 2?) corresponding to the right
-%angle and the amplitude right behind the object (very thin)(in the
-%direction of the incident wave)
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
@@ -50,32 +40,33 @@ f = 900e6;
 sourceY = 0.5; %For perpendicular
 % sourceY = 0.2;      %For angle
 Source = addSource( Source,conf,sourceY,0.5,f,sin(2*pi*f*T));
-% indY = meter2index(sourceY,conf);
-indY = meter2index(0.5,conf);
+indY = meter2index(0.5,conf); %Check is always performed at this Y index.
 indX= meter2index(0.65,conf)-1; %0.65=0.7-0.1/2
+
+%% Initializing saves
+pre=[];
+pre2=[];
+pre3=[];
+
+post=[];
+post2=[];
+post3=[];
+
+inside=[];
 
 for loop=1:2
     %% Filling the field with objects
 
-    %Full reflection normal:
+    %Full reflection:
     if loop==2
      field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,0.7,sourceY,0.1,3,conf);
     end
-    %Partial reflection normal
-    %  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50,1.5,1.5,0.01,3,conf);
-
-    %Full reflection non normal
-    %  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,1.5,2,0.1,3,conf);
-
-    %Partial reflection non normal
-    %  field(1).EpsRel = draw_rectangle(field(1).EpsRel,50,1.5,2,0.01,3,conf);
-
 
     % Simulating losses
-    field(1).SigM(:) = 300;
-    field(1).Sig(:) = 300;
+    field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+    field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
-    %% Prep video
+    % For more conveniet references
     EpsRel = field(1).EpsRel();
     MuRel = field(1).MuRel();
 
@@ -117,16 +108,15 @@ for loop=1:2
     magnitudebefore=0;
     magnitudeafter=0;
     
-    %Booleans
+    %Booleans to steer the checking
     checking=1;
     next=0;
     nextCheck=0;
     nextnextCheck=0;
     nextnextnextCheck=0;
     for i=1:conf.nrOfFrames-1
-    %     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
 
-    %%Calculate new fields
+        %%Calculate new fields
         disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
         results.Hx =    CHXH.*prev.Hx -...
                         CHXE.*(prev.Ez(:,(1:end-1)+1) - prev.Ez(:,1:end-1)  );
@@ -137,42 +127,15 @@ for loop=1:2
                                             CEZH(2:end-1,2:end-1).*(    (results.Hy(2:end,2:end-1)   -   results.Hy((2:end)-1,2:end-1))-...
                                                                         (results.Hx(2:end-1,2:end)   -   results.Hx(2:end-1,(2:end)-1)));                                             
 
-    %Update sources
-        for s=1:numel(Source)
-           sourceXloc = round(Source(s).X_loc(i)/conf.delta)+1;
-           sourceYloc = round(Source(s).Y_loc(i)/conf.delta)+1;
-           sourceValue = Source(s).value(i);
-           results.Ez(sourceXloc,sourceYloc) = sourceValue;
-        end
-    %Perpendicular
-%         if i==8
-%            prev.Ez
-%            pre(loop)=prev.Ez(indY,indX);
-%            preH(loop)=prev.Hx(indY,indX);
-%         elseif i==9
-%            post(loop)=prev.Ez(indY,indX);
-%            postH(loop)=prev.Hx(indY,indX);
-%         end
-% 
-% %Angle
-%         if i==15
-%             prev.Ez
-%            pre(loop)=prev.Ez(indY,indX);
-%            preH(loop)=prev.Hx(indY,indX);
-%            pre2(loop)=prev.Ez(indY+1,indX);
-%         elseif i==16
-%            post(loop)=prev.Ez(indY,indX);
-%            postH(loop)=prev.Hx(indY,indX);
-%            pre3(loop)=prev.Ez(indY+2,indX);
-%         elseif i==17
-%            post2(loop)=prev.Ez(indY+1,indX);
-%         elseif i==18
-%            post3(loop)=prev.Ez(indY+2,indX);
-%         end
+        %Update sources
+            for s=1:numel(Source)
+               sourceXloc = round(Source(s).X_loc(i)/conf.delta)+1;
+               sourceYloc = round(Source(s).Y_loc(i)/conf.delta)+1;
+               sourceValue = Source(s).value(i);
+               results.Ez(sourceXloc,sourceYloc) = sourceValue;
+            end
 
-
-% Without indices:
-%     Perpendicular
+% %     Perpendicular
 %         if checking && abs(prev.Ez(indY,indX))>0.001
 %            next=1;
 %            checking=0;
@@ -181,12 +144,14 @@ for loop=1:2
 %            preH(loop)=prev.Hx(indY,indX);
 %            next=0;
 %            nextCheck=1;
+%            inside(1,loop) = prev.Ez(indY,indX+1);
 %         elseif nextCheck
 %            post(loop)=prev.Ez(indY,indX);
 %            postH(loop)=prev.Hx(indY,indX);
 %            nextCheck=0;
+%            inside(2,loop)= prev.Ez(indY,indX+1);
 %         end
-% 
+        
 
     %Angle
         if checking && abs(prev.Ez(indY,indX))>0.001
@@ -198,26 +163,40 @@ for loop=1:2
            pre(loop)=prev.Ez(indY,indX);
            preH(loop)=prev.Hx(indY,indX);
            pre2(loop)=prev.Ez(indY+1,indX);
+           inside(1,loop) = prev.Ez(indY,indX+1);
         elseif nextCheck
            post(loop)=prev.Ez(indY,indX);
            postH(loop)=prev.Hx(indY,indX);
            pre3(loop)=prev.Ez(indY+2,indX);
            nextCheck=0;
            nextnextCheck=1;
+           inside(2,loop)= prev.Ez(indY,indX+1);
         elseif nextnextCheck
            post2(loop)=prev.Ez(indY+1,indX);
            nextnextCheck=0;
            nextnextnextCheck=1;
+           inside(3,loop)= prev.Ez(indY,indX+1);
         elseif nextnextnextCheck
            post3(loop)=prev.Ez(indY+2,indX);
            nextnextnextCheck=0;
+           inside(4,loop)= prev.Ez(indY,indX+1);
         end
 
-
-
-
-        %Save current fields as old fields for net iteration
+        %Save current fields as old fields for next iteration
             prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     end
 end
+
+%% Show results
+disp(['Values before reflection for both simulations at pixel of approach: ' num2str(pre)])
+disp(['Values before reflection for both simulations at under angle: ' num2str(pre2) '. (Only valid for approach under angel)'])
+disp(['Values before reflection for both simulations at under other angle: ' num2str(pre3) '. (Only valid for approach under angel)'])
+
+disp(['Values after reflection for both simulations at pixel of approach: ' num2str(post)])
+disp(['Values after reflection for both simulations at under angle: ' num2str(post2) '. (Only valid for approach under angel)'])
+disp(['Values after reflection for both simulations at under other angle: ' num2str(post3) '. (Only valid for approach under angel)'])
+
+disp(['E-field at index of object when it is not there: ' num2str(inside(1,:))])
+disp(['E-field inside object at point of relection: ' num2str(inside(2,:))])
+%% Free path
 rmpath(genpath(pwd))

@@ -3,6 +3,12 @@ clear
 close all
 addpath(genpath(pwd))
 
+% NOTE:
+% For comments and info on the general working of the code please check teh
+% file main_commented. The structure is a bit different but the principles
+% are the same. The comment mentioned here are only those specifically for
+% this script.
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 1;
@@ -21,15 +27,9 @@ sX=conf.x_length/2;
 sY=conf.y_length/2;
 Source = addSource( Source,conf,sX,sY,f,sin(2*pi*f*T) );
 
-%% Filling the field with objects
-
-%Knife-edge
-% field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,7.5,2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
-
-
 %% Simulating losses
-field(1).SigM(:) = 300;
-field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Prep video
 % v = VideoWriter('Output','MPEG-4');
@@ -91,8 +91,6 @@ prev.Hy=field(1).Hy;
 E_temp=[];
 sz=size(prev.Ez);
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -121,8 +119,6 @@ for i=1:conf.nrOfFrames-1
 % 
 %     ToPrintq=results.(conf.ToPrint);
 %     temp = ToPrintq(:,:,20:end);
-%     % maxToPrint = max(temp(:));
-%     minToPrint = min(temp(:));
 %     absMaxToPrint = max(ToPrintq(:));
 % 
 % 
@@ -148,22 +144,20 @@ for i=1:conf.nrOfFrames-1
 %             'AlphaData',MUrelalpha(:,:,1),...
 %             'LineStyle','none',...
 %             'FaceColor','blue');
-% %     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
 %     hold off
 %     colorbar;
-% %     zlim([minToPrint,absMaxToPrint+0.2]);
 %     caxis([-0.5,0.5])
 %     view(2)
 %     frame = getframe;
 %     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
-%    E_temp=[E_temp; prev.Ez(meter2index(sX,conf),meter2index(sY,conf)+1:end)];
+  %Track 1st nonzero source value and its evolution over 1 line until reflection  
     if i>=2 && i < sz(1)/2 && i< sz(2)/2
-        nonZero(i)=numel(find(prev.Ez));  
-        E_fields(:,:,i)=prev.Ez; %Used to see the evolution manually
+        nonZero(i-1)=numel(find(prev.Ez));  
+        E_fields(:,:,i-1)=prev.Ez; %Used to see the evolution manually
         E_temp=[E_temp prev.Ez(meter2index(sX,conf)+i-1,meter2index(sY,conf)+1)]; %Save E_field evolution on 1 row.
     end
 end
@@ -173,13 +167,14 @@ end
 % close(v)
 % 
 
-%Try 2
+%Calculating ratios
 ratio = E_temp(2:end)./ E_temp(1:end-1);
 figure
 plot(ratio)
-
 mainRatio = E_temp(2:end)./ E_temp(1); %Compare with starting value;
 
+disp(['Ratio of E-field compared to itself 1 time instance ago and on previous location:' num2str(ratio)])
+disp(['Ratio of E-field compared to original source value:' num2str(mainRatio)])
 %% Draw and export to movie 
 % plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
 rmpath(genpath(pwd))

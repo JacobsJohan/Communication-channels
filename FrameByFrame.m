@@ -24,8 +24,8 @@ Source = addSource( Source,conf,5,5,f,sin(2*pi*f*T) );%Voor 10x10
 
 
 %% Simulating losses
-field(1).SigM(:) = 0;
-field(1).Sig(:) = 0;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Prep video
 % v = VideoWriter('Output','MPEG-4');
@@ -70,8 +70,6 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 Etest = 0;
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -119,10 +117,6 @@ for i=1:conf.nrOfFrames-1
 %     EPSrelalpha     = (EpsRel -1) /   (max(EpsRel(:))-1)/2.5;
 %     MUrelalpha      = (MuRel -1) /   (max(MuRel(:))-1)/2.5;
 
-
-    temp = ToPrintq(:,:,20:end);
-    % maxToPrint = max(temp(:));
-    minToPrint = min(temp(:));
     absMaxToPrint = max(ToPrintq(:));
 
 
@@ -148,16 +142,14 @@ for i=1:conf.nrOfFrames-1
 %             'AlphaData',MUrelalpha(:,:,1),...
 %             'LineStyle','none',...
 %             'FaceColor','blue');
-% %     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
 %     hold off
 %     colorbar;
-% %     zlim([minToPrint,absMaxToPrint+0.2]);
 %     caxis([-0.5,0.5])
 %     view(2)
 %     frame = getframe;
 %     writeVideo(v,frame);
 % 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
 end
 % 

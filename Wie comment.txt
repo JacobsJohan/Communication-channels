@@ -1,0 +1,31 @@
+DielectricSlab		OK
+DielecticSLab--> Deleted
+Dipole  --> w wss ni afgewerkt
+FrameByFrame ---> Johan
+FrameByFrameSAR ---> Johan
+Interference		
+Knife-edge		OK
+Knife-edge-vid		OK
+Lossvalidations	--> Checken wat mee doen, commenting OK
+Main	--> OK
+Main2	--> Main_commented
+Main_commented		OK
+Reflection_Visual	OK	
+Reflection_Calc		OK
+Shadowing  ---> Johan
+SpeedValidation	OK
+
+FDTDInit	OK
+MaxwellCore 	OK
+Maxwellcore2	OK--> Deleteable?
+plotAndToVid	OK
+plotAndToVid2	OK --> Deleteable?
+
+MiscFunctions:
+simHead ---> Johan
+addSource	OK
+draw_ellips	OK
+draw_rectangle	OK
+meter2index	OK
+
+Rest: Seppe

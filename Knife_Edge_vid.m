@@ -3,6 +3,16 @@ clear
 close all
 addpath(genpath(pwd))
 
+% NOTE:
+% For comments and info on the general working of the code please check teh
+% file main_commented. The structure is a bit different but the principles
+% are the same. The comment mentioned here are only those specifically for
+% this script.
+
+
+% NOTE:
+% This script is for plotting the KE-simulation. The calculations for
+% different v are done in 'Knife_Edge.m'
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 10;
@@ -13,7 +23,7 @@ conf.Resolution_Y   = 500;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf );
 
-
+%Defining locations and heights of TX,RX
 sloc=2;
 Recloc= 8;
 source_h=2.5;
@@ -28,18 +38,19 @@ Source = addSource( Source,conf,source_h,sloc,f,sin(2*pi*f*T));
 buildx=3;
 
 %Knife-edge
-field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,buildx,2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
-
+field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,buildx,2.5,0.1,5,conf);
+% Note you can make it thinner but than you have to increase EPSrel
 
 %% Simulating losses
-field(1).SigM(:) = 300;
-field(1).Sig(:) = 300;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %Knife-edge
 field(1).Sig=draw_rectangle(field(1).Sig,10e10,buildx,2.5,0.1,5,conf);
 
+
 %% Prep video
-v = VideoWriter('STD','MPEG-4');
+v = VideoWriter('KE-model','MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()
@@ -96,10 +107,7 @@ prev.Ez=field(1).Ez;
 prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
-E_temp=[];
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -128,9 +136,6 @@ for i=1:conf.nrOfFrames-1
         linspace(0,conf.y_length,M));
 
     ToPrintq=results.(conf.ToPrint);
-    temp = ToPrintq(:,:,20:end);
-    % maxToPrint = max(temp(:));
-    minToPrint = min(temp(:));
     absMaxToPrint = max(ToPrintq(:));
 
 
@@ -164,28 +169,19 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',SIGrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','red');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
     caxis([-0.5,0.5])
     view(2)
     frame = getframe;
     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
-    
-%    E_temp=[E_temp prev.Ez(meter2index(1.5,conf),meter2index(1.5,conf))];
 end
 %% Free videofile
 close(gcf)
 close(v)
 
-
-% figure
-% plot(E_temp)
-
-%% Draw and export to movie 
-% plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
+%% Free path
 rmpath(genpath(pwd))
