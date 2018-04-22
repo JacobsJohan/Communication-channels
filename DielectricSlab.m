@@ -136,8 +136,6 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -165,8 +163,6 @@ for i=1:conf.nrOfFrames-1
     [X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
 
     ToPrintq=results.(conf.ToPrint);
-    temp = ToPrintq(:,:,20:end);
-    minToPrint = min(temp(:));
     absMaxToPrint = max(ToPrintq(:));
 
 

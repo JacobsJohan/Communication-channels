@@ -22,10 +22,10 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 Source = struct;
 
 f = 900e6; %freq of source
-sourceX = 0.5; %Horizontal
-sourceY = 0.5;   %Vertical
+sourceX = 0.95; %Horizontal
+sourceY = 0.95;   %Vertical
 % Source = addSource( Source,conf,sourceY,sourceX,f,(1-2*(pi*f*T).^2).*exp(-(pi*f*T).^2)); %Gaussian pulse
-Source = addSource( Source,conf,sourceY,sourceX,f,zeros(1,numel(T))); %Gaussian pulse
+Source = addSource( Source,conf,sourceY,sourceX,f,zeros(1,numel(T)));
 fi=500e06;
 i=sin(2*pi*fi*T);
 %% Filling the field with objects
