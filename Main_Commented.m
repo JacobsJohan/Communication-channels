@@ -25,7 +25,8 @@ Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
 
 % Example of adjusting a part of the relative permittivity. 
 % Same principle holds for other spatial properties.
-% field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,7.5,2.5,0.1,5,conf);
+% field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,1.5,2.5,0.1,5,
+                                                              ...conf);
 
 
 %% Simulating losses
@@ -45,16 +46,16 @@ EpsRel = field(1).EpsRel();
 MuRel = field(1).MuRel();
 
 [M,N,T] = size(EpsRel);
-[X2,Y2]         = meshgrid(      linspace(0,conf.x_length,M),...
+[X2,Y2]         = meshgrid(linspace(0,conf.x_length,M),...
                                     linspace(0,conf.y_length,N)...
                                     );
 
 
-[Xq2,Yq2]       = meshgrid(     linspace(0,conf.x_length,conf.Resolution_X),...
+[Xq2,Yq2]       = meshgrid(linspace(0,conf.x_length,conf.Resolution_X),...
                        linspace(0,conf.y_length,conf.Resolution_Y)); 
 
-EPSrelalpha     = (interp2(X2,Y2,EpsRel,Xq2,Yq2) -1) /   (max(EpsRel(:))-1)/2.5;
-MUrelalpha      = (interp2(X2,Y2,MuRel,Xq2,Yq2)  -1) /   (max(MuRel(:))-1)/2.5;
+EPSrelalpha = (interp2(X2,Y2,EpsRel,Xq2,Yq2)-1)/(max(EpsRel(:))-1)/2.5;
+MUrelalpha  = (interp2(X2,Y2,MuRel,Xq2,Yq2) -1) /(max(MuRel(:))-1)/2.5;
 
 
 %% Simulate field
@@ -74,17 +75,19 @@ SIGm    = field(1).SigM(1:2:end,1:2:end);
 EPSrel  = field(1).EpsRel(1:2:end,1:2:end);
 
 %Calculate constants used in FDTD algorithm
-CHXH = (1-SIGm(:,end-1).*deltat/2./MUXrel)./(1+SIGm(:,end-1).*deltat/2./MUXrel);
+CHXH = (1-SIGm(:,end-1).*deltat/2./MUXrel)./...
+                                     (1+SIGm(:,end-1).*deltat/2./MUXrel);
 CHXE = (Sc/Z0)./MUXrel * 1./(1+SIGm(:,end-1).*deltat/2./MUXrel);
-CHYH = (1-SIGm(end-1,:).*deltat/2./MUYrel)./(1+SIGm(end-1,:).*deltat/2./MUYrel);
+CHYH = (1-SIGm(end-1,:).*deltat/2./MUYrel)./...
+                                     (1+SIGm(end-1,:).*deltat/2./MUYrel);
 CHYE = (Sc/Z0)./MUYrel * 1./(1+SIGm(end-1,:).*deltat/2./MUYrel);
 CEZE = (1-deltat./2*SIG./EPSrel) ./ (1+deltat/2*SIG./EPSrel);
 CEZH = 1./(1+deltat/2*SIG./EPSrel) * Z0*Sc./EPSrel;
 
 %Initializing results
 results=struct;
-results.Ez=field(1).Ez;%All 3 are initialized with right dimensions
-... and all zero
+%All 3 fields are initialized with right dimensions and all zero
+results.Ez=field(1).Ez;
 results.Hx=field(1).Hx;
 results.Hy=field(1).Hy;
 
@@ -96,20 +99,22 @@ prev.Hy=field(1).Hy;
 
 % Prepare for plotting
 [M,N] = size(results.(conf.ToPrint));
-[X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
+[X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+                                            linspace(0,conf.y_length,M));
 
 
 for i=1:conf.nrOfFrames-1
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
-                    CHXE.*(prev.Ez(:,(1:end-1)+1) - prev.Ez(:,1:end-1)  );
+                    CHXE.*(prev.Ez(:,(1:end-1)+1) - prev.Ez(:,1:end-1));
     results.Hy =    CHYH.*prev.Hy +...
                     CHYE.*(prev.Ez((1:end-1)+1,:) - prev.Ez(1:end-1,:));
                     
-    results.Ez(2:end-1,2:end-1) =    CEZE(2:end-1,2:end-1).*     prev.Ez(2:end-1,2:end-1) +...
-                                        CEZH(2:end-1,2:end-1).*(    (results.Hy(2:end,2:end-1)   -   results.Hy((2:end)-1,2:end-1))-...
-                                                                    (results.Hx(2:end-1,2:end)   -   results.Hx(2:end-1,(2:end)-1)));
+    results.Ez(2:end-1,2:end-1) = CEZE(2:end-1,2:end-1).*...
+        prev.Ez(2:end-1,2:end-1) +CEZH(2:end-1,2:end-1).*...
+       ((results.Hy(2:end,2:end-1)-results.Hy((2:end)-1,2:end-1))...
+             -(results.Hx(2:end-1,2:end)-results.Hx(2:end-1,(2:end)-1)));
 %Update sources
     for s=1:numel(Source)
        sourceXloc = round(Source(s).X_loc(i)/conf.delta)+1;
@@ -128,8 +133,7 @@ for i=1:conf.nrOfFrames-1
             'FaceColor','interp');
     hold on 
     %Display relative permittivity
-    surf(   Xq2,...
-            Yq2,...
+    surf(   Xq2,Yq2,...
             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
             'FaceAlpha','interp',...
             'AlphaDataMapping','none',...
@@ -137,8 +141,7 @@ for i=1:conf.nrOfFrames-1
             'LineStyle','none',...
             'FaceColor','red');
     %Display relative permeability
-    surf(   Xq2,...
-            Yq2,...
+    surf(   Xq2,Yq2,...
             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
             'FaceAlpha','interp',...
             'AlphaDataMapping','none',...

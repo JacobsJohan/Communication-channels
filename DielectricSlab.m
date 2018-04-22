@@ -4,10 +4,9 @@ clc
 addpath(genpath(pwd))
 
 % NOTE:
-% For comments and info on the general working of the code please check teh
-% file main_commented. The structure is a bit different but the principles
-% are the same. The comment mentioned here are only those specifically for
-% this script.
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
 
 %% Dielectric slab
 % The dielectic slab consists of 3 layers of dielectrics, each a different

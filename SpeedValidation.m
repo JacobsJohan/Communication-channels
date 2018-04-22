@@ -3,10 +3,9 @@ clear
 close all
 addpath(genpath(pwd))
 % NOTE:
-% For comments and info on the general working of the code please check teh
-% file main_commented. The structure is a bit different but the principles
-% are the same. The comment mentioned here are only those specifically for
-% this script.
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
 
 %Only the speed of the E-field is checked.
 %% Initialising the fields for simulation 
@@ -160,8 +159,8 @@ for i=1:conf.nrOfFrames-1
     
     %Check if nonzero
     if checking && abs(prev.Ez(yind,xind))>1e-10
-        iteration=i;
-        checking=0;
+        iteration=i; %This is the frame where the E-field in the point becomes nonzero.
+        checking=0; %Frame found so checking can stop
     end
 end
 %% Free videofile

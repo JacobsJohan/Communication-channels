@@ -4,10 +4,10 @@ close all
 addpath(genpath(pwd))
 
 % NOTE:
-% For comments and info on the general working of the code please check teh
-% file main_commented. The structure is a bit different but the principles
-% are the same. The comment mentioned here are only those specifically for
-% this script.
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
+
 
 % If the user is only interested in the outcome rather than in the videos,
 % 'Reflection_Calc' is recommended.
@@ -18,13 +18,12 @@ addpath(genpath(pwd))
 % For normal total reflection you just have to check if the amplitude at
 % the reflective object after reflection is different from the amplitude 
 % without reflective object. Also one can check the value of the E-field in
-% teh reflective object.
+% the reflective object.
 %
 % For non-normal reflection the amplitudes around the point of reflection
-% are observed and compared to simulations without refleective object.
+% are observed and compared to simulations without reflective object.
 % Again the values inside the object of reflection can be checked.
 
-% To generate an accompanying video, please refer to 'Reflection_Visual'
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;

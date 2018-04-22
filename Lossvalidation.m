@@ -4,10 +4,9 @@ close all
 addpath(genpath(pwd))
 
 % NOTE:
-% For comments and info on the general working of the code please check teh
-% file main_commented. The structure is a bit different but the principles
-% are the same. The comment mentioned here are only those specifically for
-% this script.
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
@@ -167,7 +166,7 @@ end
 % close(v)
 % 
 
-%Calculating ratios
+%% Calculating ratios
 ratio = E_temp(2:end)./ E_temp(1:end-1);
 figure
 plot(ratio)
@@ -176,5 +175,4 @@ mainRatio = E_temp(2:end)./ E_temp(1); %Compare with starting value;
 disp(['Ratio of E-field compared to itself 1 time instance ago and on previous location:' num2str(ratio)])
 disp(['Ratio of E-field compared to original source value:' num2str(mainRatio)])
 %% Draw and export to movie 
-% plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
 rmpath(genpath(pwd))

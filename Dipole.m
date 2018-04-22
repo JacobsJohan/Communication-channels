@@ -3,6 +3,11 @@ clear
 close all
 addpath(genpath(pwd))
 
+% NOTE:
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 1;
