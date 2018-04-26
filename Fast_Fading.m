@@ -5,7 +5,7 @@ addpath(genpath(pwd))
 
 %% Initialising the fields for simulation 
 conf.fmax           = 2e09;
-conf.nrOfFrames     = 4250;
+conf.nrOfFrames     = 100;%4250;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -33,14 +33,40 @@ Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
 % indy = meter2index(ys,conf);
 
 %% Define local areas
+boxSize = 30*conf.delta;
+y11 = sourceY-50*conf.delta;
+y12 = sourceY-50*conf.delta-boxSize;
+x11 = sourceX-boxSize/2;
+x12 = sourceX+boxSize/2;
+box1=[x11 x12 y12 y11];
 
+y21 = 50*conf.delta+boxSize/2;
+y22 = 50*conf.delta-boxSize/2;
+x21 = sourceX-boxSize/2;
+x22 = sourceX+boxSize/2;
+box2=[x21 x22 y22 y21];
+
+y31 = 50*conf.delta+boxSize/2;
+y32 = 50*conf.delta-boxSize/2;
+x31 = 50*conf.delta-boxSize/2;
+x32 = 50*conf.delta+boxSize/2;
+box3=[x31 x32 y32 y31];
+
+y41 = 50*conf.delta+boxSize/2;
+y42 = 50*conf.delta-boxSize/2;
+x41 = 375*conf.delta-boxSize/2;
+x42 = 375*conf.delta+boxSize/2;
+box4=[x41 x42 y42 y41];
+
+%converting to indices
+boxind = meter2index([box1;box2;box3;box4],conf);
 
 %% Simulating losses
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
 field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Prepare video
-v = VideoWriter('Output','MPEG-4');
+v = VideoWriter('FF','MPEG-4');
 v.FrameRate = 8;
 v.Quality = 100; 
 open(v);
@@ -110,7 +136,7 @@ prev.Hy=field(1).Hy;
                                             linspace(0,conf.y_length,M));
 
 % Initialize temp saveFile
-E_save=ones(4,conf.nrOfFrames-1);
+% E_save=ones(4,conf.nrOfFrames-1);
 
 for i=1:conf.nrOfFrames-1
 %%Calculate new fields
@@ -170,17 +196,30 @@ for i=1:conf.nrOfFrames-1
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
     % Save values in measurement points
-    E_save(:,i) = reshape(prev.Ez(indx,indy),numel(xs)*numel(ys),1);
-%       E_save(:,i) = [prev.Ez(indx(1),indy(1));....
-%           prev.Ez(indx(2),indy(2));prev.Ez(indx(3),indy(3));...
-%           prev.Ez(indx(4),indy(4))];
+%     E_save(:,i) = reshape(prev.Ez(indx,indy),numel(xs)*numel(ys),1);
+
+    %Save E-field in boxes
+    E_box1(:,:,i) = prev.Ez(boxind(1,3):boxind(1,4),boxind(1,1):boxind(1,2));
+%     E_box2(:,:,i) = prev.Ez(boxind(2,3):boxind(2,4),boxind(2,1):boxind(2,2));
+%     E_box3(:,:,i) = prev.Ez(boxind(3,3):boxind(3,4),boxind(3,1):boxind(3,2));
+%     E_box4(:,:,i) = prev.Ez(boxind(4,3):boxind(4,4),boxind(4,1):boxind(4,2));
+
 end
 %% Free videofile
 close(gcf)
 close(v)
 
-figure
-plot(E_save)
+[M,N] = size(E_box1(:,:,1));
+[X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+                                            linspace(0,conf.y_length,M));
+
+%% Make videos
+ 
+% To Add: give time interval as parameter
+plotBox('Box1',E_box1,conf);
+plotBox('Box2',E_box2,conf);
+plotBox('Box3',E_box3,conf);
+plotBox('Box4',E_box4,conf);
 
 %% Release path
 rmpath(genpath(pwd))
