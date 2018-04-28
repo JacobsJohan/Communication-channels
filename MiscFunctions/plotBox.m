@@ -1,4 +1,4 @@
-function [ output_args ] = plotBox( name, box,conf)
+function [ output_args ] = plotBox( name, box,conf, frames)
 
 v = VideoWriter([pwd '\Vids\FF\' name],'MPEG-4');
 v.FrameRate = 8;
@@ -8,12 +8,12 @@ figure()
 pos = get(gcf, 'Position');
 set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
 [M,N] = size(box(:,:,1));
-[X,Y] = meshgrid(linspace(0,conf.x_length,N),...
-                                            linspace(0,conf.y_length,M));
-for i=1:conf.nrOfFrames-1
+[X,Y] = meshgrid(linspace(0,30,N),...
+                                            linspace(0,30,M));
+for i=frames(1):frames(2)
  
 % Print
-    disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
+    disp(['Frame: ',num2str(i-frames(1)+1),' / ',num2str(frames(2)-frames(1))])
     surf(X,Y,box(:,:,i),...
             'LineStyle','none',...
             'FaceColor','interp');

@@ -5,9 +5,9 @@ addpath(genpath(pwd))
 
 %% Initialising the fields for simulation 
 conf.fmax           = 2e09;
-conf.nrOfFrames     = 100;%4250;
-conf.Resolution_X   = 300;
-conf.Resolution_Y   = 300;
+conf.nrOfFrames     = 1000;
+conf.Resolution_X   = 500;
+conf.Resolution_Y   = 500;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit_fastfading( conf );
 
@@ -60,7 +60,6 @@ box4=[x41 x42 y42 y41];
 
 %converting to indices
 boxind = meter2index([box1;box2;box3;box4],conf);
-
 %% Simulating losses
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
 field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
@@ -200,9 +199,9 @@ for i=1:conf.nrOfFrames-1
 
     %Save E-field in boxes
     E_box1(:,:,i) = prev.Ez(boxind(1,3):boxind(1,4),boxind(1,1):boxind(1,2));
-%     E_box2(:,:,i) = prev.Ez(boxind(2,3):boxind(2,4),boxind(2,1):boxind(2,2));
-%     E_box3(:,:,i) = prev.Ez(boxind(3,3):boxind(3,4),boxind(3,1):boxind(3,2));
-%     E_box4(:,:,i) = prev.Ez(boxind(4,3):boxind(4,4),boxind(4,1):boxind(4,2));
+    E_box2(:,:,i) = prev.Ez(boxind(2,3):boxind(2,4),boxind(2,1):boxind(2,2));
+    E_box3(:,:,i) = prev.Ez(boxind(3,3):boxind(3,4),boxind(3,1):boxind(3,2));
+    E_box4(:,:,i) = prev.Ez(boxind(4,3):boxind(4,4),boxind(4,1):boxind(4,2));
 
 end
 %% Free videofile
@@ -215,11 +214,26 @@ close(v)
 
 %% Make videos
  
-% To Add: give time interval as parameter
-plotBox('Box1',E_box1,conf);
-plotBox('Box2',E_box2,conf);
-plotBox('Box3',E_box3,conf);
-plotBox('Box4',E_box4,conf);
+% NOTE: give time interval as parameter(based on existing videos)
+plotBox('Box1',E_box1,conf,);
+plotBox('Box2',E_box2,conf,);
+plotBox('Box3',E_box3,conf,);
+plotBox('Box4',E_box4,conf,);
 
+%% Plot graphs
+center1=squeeze(E_box1(round(size(E_box1,1)/2),round(size(E_box1,2)/2),:));
+center2=squeeze(E_box2(round(size(E_box2,1)/2),round(size(E_box2,2)/2),:));
+center3=squeeze(E_box3(round(size(E_box3,1)/2),round(size(E_box3,2)/2),:));
+center4=squeeze(E_box4(round(size(E_box4,1)/2),round(size(E_box4,2)/2),:));
+
+figure
+subplot(2,2,1)
+plot(center1)
+subplot(2,2,2)
+plot(center2)
+subplot(2,2,3)
+plot(center3)
+subplot(2,2,4)
+plot(center4)
 %% Release path
 rmpath(genpath(pwd))
