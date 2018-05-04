@@ -3,6 +3,8 @@ clear
 close all
 addpath(genpath(pwd))
 
+%Better to use main_commented
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 3;
@@ -34,9 +36,8 @@ f = 900e6;
 Source = addSource( Source,conf,1.5,1,f,(1-2*(pi*f*T).^2).*exp(-(pi*f*T).^2) );
 
 %% Simulating losses
-field(1).SigM(:) = 0; % No magnetic conductivity in the air
-field(1).Sig(:) = 8e-15; % conductivity of air is [3e-15, 8e-15];
-% field(1).Sig(:) = 3.77e7; % conductivity of aluminum
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 
 %% Filling the field with objects

@@ -1,5 +1,6 @@
 function [ field ] = FDTDMaxwellCore(field,conf,Source)
 
+%Initialiing constants
 deltat  = conf.deltat;
 delta   = conf.delta;
 c       = 3e8;              %Speed of light
@@ -8,12 +9,14 @@ eps0    = 1/mu0/c/c;        %Permitivity of free space
 Z0      = sqrt(mu0/eps0);   %Free space impedance 
 Sc      = c*deltat/delta;  	%Courant number
 
+%Initialize spatial properties
 MUXrel  = field(1).MuRel(1:2:end,2:2:end);
 MUYrel  = field(1).MuRel(2:2:end,1:2:end);
 SIG     = field(1).Sig(1:2:end,1:2:end);
 SIGm    = field(1).SigM(1:2:end,1:2:end);
 EPSrel  = field(1).EpsRel(1:2:end,1:2:end);
 
+%Calculate constants for the FDTD equations
 Chxh = (1-SIGm(:,end-1).*deltat/2./MUXrel)./(1+SIGm(:,end-1).*deltat/2./MUXrel);
 Chxe = (Sc/Z0)./MUXrel * 1./(1+SIGm(:,end-1).*deltat/2./MUXrel);
 Chyh = (1-SIGm(end-1,:).*deltat/2./MUYrel)./(1+SIGm(end-1,:).*deltat/2./MUYrel);
@@ -22,7 +25,9 @@ CEZE = (1-deltat./2*SIG./EPSrel) ./ (1+deltat/2*SIG./EPSrel);
 CEZH = 1./(1+deltat/2*SIG./EPSrel) * Z0*Sc./EPSrel;
 
 for i=1:conf.nrOfFrames-1
-    disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
+    disp([num2str(i),' / ',num2str(conf.nrOfFrames)]) %Show progress
+    
+    %Calculate fields
     field(i+1).Hx(:,:) =    Chxh.*      field(i).Hx(:,:) -...
                             Chxe.*(     field(i).Ez(:,(1:end-1)+1)  -   field(i).Ez(:,1:end-1)  );
     field(i+1).Hy(:,:) =    Chyh.*      field(i).Hy(:,:) +...
@@ -31,17 +36,16 @@ for i=1:conf.nrOfFrames-1
     field(i+1).Ez(2:end-1,2:end-1) =    CEZE(2:end-1,2:end-1).*     field(i).Ez(2:end-1,2:end-1) +...
                                         CEZH(2:end-1,2:end-1).*(    (field(i+1).Hy(2:end,2:end-1)   -   field(i+1).Hy((2:end)-1,2:end-1))-...
                                                                     (field(i+1).Hx(2:end-1,2:end)   -   field(i+1).Hx(2:end-1,(2:end)-1)));
-   
+   %Update source(s)
     for s=1:numel(Source)
        sourceXloc = round(Source(s).X_loc(i)/conf.delta)+1;
        sourceYloc = round(Source(s).Y_loc(i)/conf.delta)+1;
        sourceValue = Source(s).value(i);
-%        sourceXloc = max(1,min(conf.Xnum,sourceXloc));
-%        sourceYloc = max(1,min(conf.Ynum,sourceYloc));
        field(i+1).Ez(sourceXloc,sourceYloc) = sourceValue;
     end
 end
 
+%Prepare printing
 for i = 1:numel(field)
     V(:,:,i)        = field(i).(conf.ToPrint);
     EpsRel(:,:,i)   = field(i).EpsRel;
@@ -52,7 +56,8 @@ end
 % [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
 %                                 linspace(0,conf.y_length,N));
 % [Xq,Yq]      = meshgrid(     linspace(0,conf.x_length,conf.Resolution_X),...
-%                                 linspace(0,conf.y_length,conf.Resolution_Y));                
+%                                 linspace(0,conf.y_length,conf.Resolution_Y));    
+% % Interpolate data and spatial properties
 % ToPrintq        = interp2(X,Y,V,Xq,Yq);
 % 
 % [M,N,~] = size(EpsRel);

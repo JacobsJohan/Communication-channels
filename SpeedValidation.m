@@ -2,7 +2,12 @@ clc
 clear
 close all
 addpath(genpath(pwd))
+% NOTE:
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
 
+%Only the speed of the E-field is checked.
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 3;
@@ -15,12 +20,11 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 
 %% Initialising the different sources 
 Source = struct;
-
 f = 900e6;
 Source = addSource( Source,conf,1.5,1.5,f,sin(2*pi*f*T) );
 %% Simulating losses
-field(1).SigM(:) = 0;
-field(1).Sig(:) = 0;
+field(1).SigM(:) = 0;       % No magnetic conductivity in the air
+field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
 %% Speedtest point
 x=2.5;
@@ -31,7 +35,7 @@ yind = meter2index(1.5,conf);
 checking=1;%Boolean 
 
 %% Prep video
-v = VideoWriter('Output','MPEG-4');
+v = VideoWriter('SpeedVal','MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()
@@ -89,8 +93,6 @@ prev.Hy=field(1).Hy;
 
 
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -114,15 +116,12 @@ for i=1:conf.nrOfFrames-1
 % Prepare for plotting
 
 
-    [M,N] = size(results.Ez);
-    [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-                                    linspace(0,conf.y_length,N)...
-                                    );
+    [M,N] = size(results.(conf.ToPrint));
+    [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+        linspace(0,conf.y_length,M));
 
-    ToPrintq=results.Ez;
+    ToPrintq=results.(conf.ToPrint);
     temp = ToPrintq(:,:,20:end);
-    % maxToPrint = max(temp(:));
-    minToPrint = min(temp(:));
     absMaxToPrint = max(ToPrintq(:));
 
 
@@ -148,22 +147,20 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
     caxis([-0.5,0.5])
     view(2)
     frame = getframe;
     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
     %Check if nonzero
     if checking && abs(prev.Ez(yind,xind))>1e-10
-        iteration=i;
-        checking=0;
+        iteration=i; %This is the frame where the E-field in the point becomes nonzero.
+        checking=0; %Frame found so checking can stop
     end
 end
 %% Free videofile
@@ -177,18 +174,22 @@ close(v)
 % speed because we know the time step and spatial resolution
 
 % Let's center our source and take a point at 1m to the right. This yields
-% x=2.5,y=1.5 Indices etc are calculated above
+% x=2.5,y=1.5 Indices etc are calculated above.
 
-% time=frame-2 because in the first frame, everything is being initialized.
-% In the second frame the source starts transmitting, but there is no 
-% propagation yet. This means we have 2 all zero frames. Since we check the
-% first value that is nonzero, we have to drop 2 frames
-% The propagation distance is the difference in indices between source and
-% point 
+%time=frame-2 because first frame is all zero and
+%because in the first frame the source value is placed after calculations
+%of the fields and the first sourcevalue is 0. This means we have 2 all zero frames. Since we check for the
+%first source value that is nonzero, we have to drop 2 frames.
+%The propagation distance is the difference in indices between source and
+%point 
 speed = abs(meter2index(1.5,conf)-xind)/(iteration-2);%indexdifference/time
 
-% Remember conf.deltat = conf.delta/3e8/sqrt(2);  
+disp(['The ratio of the simulation speed and the speed of light is: ' num2str(speed)])
+if speed == 1
+    disp('Speed in simulation is correct')
+else
+    disp('Error in simulation.')
+end
 
-%% Draw and export to movie 
-% plotAndToVid2('Output/simulation2',field,conf,0.5,-0.5)
+%% Free path
 rmpath(genpath(pwd))

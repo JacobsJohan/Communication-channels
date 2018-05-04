@@ -3,6 +3,11 @@ clear
 close all
 addpath(genpath(pwd))
 
+% NOTE:
+% For comments and info on the general working of the code please check the
+% file 'main_commented.m'. The structure is a bit different but the principles
+% are the same. Not all general comments are present in this file.
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 1;
@@ -72,8 +77,6 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 Etest = 0;
 for i=1:conf.nrOfFrames-1
-%     tempfield = FDTDMaxwellCore2(tempfield,field,conf,Source );
-
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
     results.Hx =    CHXH.*prev.Hx -...
@@ -99,12 +102,11 @@ for i=1:conf.nrOfFrames-1
     EpsRel = field(1).EpsRel();
     MuRel = field(1).MuRel();
 
-    [M,N] = size(results.Ez);
-    [X,Y]         = meshgrid(     linspace(0,conf.x_length,M),...
-                                    linspace(0,conf.y_length,N)...
-                                    );
+    [M,N] = size(results.(conf.ToPrint));
+    [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+                   linspace(0,conf.y_length,M));
 
-    ToPrintq=results.Ez;
+    ToPrintq=results.(conf.ToPrint);
 
     [M,N,T] = size(EpsRel);
     [X2,Y2]         = meshgrid(      linspace(0,conf.x_length,M),...
@@ -150,16 +152,14 @@ for i=1:conf.nrOfFrames-1
             'AlphaData',MUrelalpha(:,:,1),...
             'LineStyle','none',...
             'FaceColor','blue');
-%     text(X2(end,end)/10,Y2(end,end)/10,absMaxToPrint+0.2,['time = ',num2str(Zq(1,1,i)),'s']);
     hold off
     colorbar;
-%     zlim([minToPrint,absMaxToPrint+0.2]);
     caxis([-0.5,0.5])
     view(2)
     frame = getframe;
     writeVideo(v,frame);
 
-%Save current fields as old fields for net iteration
+%Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
 end
 
