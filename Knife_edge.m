@@ -126,6 +126,12 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
     %Update values for reciever
         recval(j,i)=prev.Ez(Rindy,Rindx);
         soval(j,i)=prev.Ez(Sindy,Sindx);
+        if i>=2
+        Hx_src(j,i-1)=prev.Hx(Sindy,Sindx);
+        Hy_src(j,i-1)=prev.Hy(Sindy,Sindx);
+        Hx_rec(j,i-1)=prev.Hx(Rindy,Rindx);
+        Hy_rec(j,i-1)=prev.Hy(Rindy,Rindx);
+        end
     end
     d1=KE(j)-sloc;
     d2=Recloc-KE(j);
@@ -134,7 +140,12 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
     v(j)=h*sqrt(2/lambda*(1/d1+1/d2));
     
 end
-
+H_src = [Hx_src Hy_src zeros(size(Hx_src,1),1)];
+E_src = [zeros(size(soval,1),1) zeros(size(soval,1),1) soval];
+H_rec = [Hx_rec Hy_rec zeros(size(Hx_rec,1),1)];
+E_rec = [zeros(size(recval,1),1) zeros(size(recval,1),1) recval];
+P_src = abs(sqrt(H_src(:,1).^2+H_src(:,2).^2)).*abs(E_src(:,3));
+P_rec = abs(sqrt(H_rec(:,1).^2+H_rec(:,2).^2)).*abs(E_rec(:,3));
 
 rec = max(abs(recval),[],2);
 src = max(abs(soval),[],2);
@@ -162,6 +173,8 @@ ylabel('max(E_{rec})/max(E_{src}) (dB)')
 hold on 
 plot(vth,Le)
 legend('Simulation result','Theory')
+hold on
+plot(P_rec./P_src)
 
 %% Free path
 rmpath(genpath(pwd))

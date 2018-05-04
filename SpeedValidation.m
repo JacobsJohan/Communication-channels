@@ -12,7 +12,7 @@ addpath(genpath(pwd))
 conf.fmax           = 900e6;
 conf.x_length       = 3;
 conf.y_length       = 3;
-conf.nrOfFrames     = 50;
+conf.nrOfFrames     = 100;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -26,7 +26,38 @@ Source = addSource( Source,conf,1.5,1.5,f,sin(2*pi*f*T) );
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
 field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 
-%% Speedtest point
+
+%% Changing epsrel for entire field
+% n = sqrt(epsrel*murel);
+% We want n of 1.5, n=c/v, murel = 1;
+n=1;
+n=1.2;
+epsrel = n^2;
+field(1).EpsRel(:) = epsrel;
+
+%% Setting treshold for detection
+%  Due to the nature of the simulation, the field is updated every
+%  iteration, which is a fixed 'speed'. Depending on the value of epsrel
+%  the values in a point where there should not yet be a wave (if n~=1) is
+%  already nonzero (or larger than 1e-15 due to Matlab accuracy). Therefore
+%  one should alter the treshold. In this kind of simulations it is only
+%  encouraged to check the speed of light. One could say that if the field
+%  is small enough, we can neglect it so 'it is not yet there', but picking
+%  a treshold in that case is hard. So to be mathemqtically correct and
+%  to avoid suspicious assumptions, one should only validate the speed if
+%  n=1. We checked other speeds with q treshold of 1e-7 and 1e-8 which gave good
+%  results in a broad range of realistic n~=1 values.
+
+if n == 1
+    treshold = 1e-15;
+elseif n <1.3
+    treshold = 1e-8;
+else
+    treshold = 1e-7;
+end
+
+
+%%  Speedtest point
 x=2.5;
 y=1.5;
 xind = meter2index(2.5,conf);
@@ -35,27 +66,27 @@ yind = meter2index(1.5,conf);
 checking=1;%Boolean 
 
 %% Prep video
-v = VideoWriter('SpeedVal','MPEG-4');
-v.Quality = 100; 
-open(v);
-figure()
-pos = get(gcf, 'Position');
-set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
-
-EpsRel = field(1).EpsRel();
-MuRel = field(1).MuRel();
-
-[M,N,T] = size(EpsRel);
-[X2,Y2]         = meshgrid(      linspace(0,conf.x_length,M),...
-                                    linspace(0,conf.y_length,N)...
-                                    );
-
-
-[Xq2,Yq2]       = meshgrid(     linspace(0,conf.x_length,conf.Resolution_X),...
-                       linspace(0,conf.y_length,conf.Resolution_Y)); 
-
-EPSrelalpha     = (interp2(X2,Y2,EpsRel,Xq2,Yq2) -1) /   (max(EpsRel(:))-1)/2.5;
-MUrelalpha      = (interp2(X2,Y2,MuRel,Xq2,Yq2)  -1) /   (max(MuRel(:))-1)/2.5;
+% v = VideoWriter('SpeedVal','MPEG-4');
+% v.Quality = 100; 
+% open(v);
+% figure()
+% pos = get(gcf, 'Position');
+% set(gcf, 'Position', [0, 0, pos(3)*2, pos(4)*2])
+% 
+% EpsRel = field(1).EpsRel();
+% MuRel = field(1).MuRel();
+% 
+% [M,N,T] = size(EpsRel);
+% [X2,Y2]         = meshgrid(      linspace(0,conf.x_length,M),...
+%                                     linspace(0,conf.y_length,N)...
+%                                     );
+% 
+% 
+% [Xq2,Yq2]       = meshgrid(     linspace(0,conf.x_length,conf.Resolution_X),...
+%                        linspace(0,conf.y_length,conf.Resolution_Y)); 
+% 
+% EPSrelalpha     = (interp2(X2,Y2,EpsRel,Xq2,Yq2) -1) /   (max(EpsRel(:))-1)/2.5;
+% MUrelalpha      = (interp2(X2,Y2,MuRel,Xq2,Yq2)  -1) /   (max(MuRel(:))-1)/2.5;
 
 
 %% Simulate field
@@ -92,6 +123,7 @@ prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
 
+%% Loop 
 for i=1:conf.nrOfFrames-1
 %%Calculate new fields
     disp([num2str(i),' / ',num2str(conf.nrOfFrames)])
@@ -113,59 +145,59 @@ for i=1:conf.nrOfFrames-1
     
 %Plot calculated fields
 
-% Prepare for plotting
-
-
-    [M,N] = size(results.(conf.ToPrint));
-    [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
-        linspace(0,conf.y_length,M));
-
-    ToPrintq=results.(conf.ToPrint);
-    temp = ToPrintq(:,:,20:end);
-    absMaxToPrint = max(ToPrintq(:));
-
-
-% Print
-    disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
-    surf(X,Y,ToPrintq,...
-            'LineStyle','none',...
-            'FaceColor','interp');
-    hold on 
-    surf(   Xq2,...
-            Yq2,...
-            ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
-            'FaceAlpha','interp',...
-            'AlphaDataMapping','none',...
-            'AlphaData',EPSrelalpha(:,:,1),...
-            'LineStyle','none',...
-            'FaceColor','red');
-    surf(   Xq2,...
-            Yq2,...
-            ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
-            'FaceAlpha','interp',...
-            'AlphaDataMapping','none',...
-            'AlphaData',MUrelalpha(:,:,1),...
-            'LineStyle','none',...
-            'FaceColor','blue');
-    hold off
-    colorbar;
-    caxis([-0.5,0.5])
-    view(2)
-    frame = getframe;
-    writeVideo(v,frame);
+% % Prepare for plotting
+% 
+% 
+%     [M,N] = size(results.(conf.ToPrint));
+%     [X,Y] = meshgrid(linspace(0,conf.x_length,N),...
+%         linspace(0,conf.y_length,M));
+% 
+%     ToPrintq=results.(conf.ToPrint);
+%     temp = ToPrintq(:,:,20:end);
+%     absMaxToPrint = max(ToPrintq(:));
+% 
+% 
+% % Print
+%     disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
+%     surf(X,Y,ToPrintq,...
+%             'LineStyle','none',...
+%             'FaceColor','interp');
+%     hold on 
+%     surf(   Xq2,...
+%             Yq2,...
+%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
+%             'FaceAlpha','interp',...
+%             'AlphaDataMapping','none',...
+%             'AlphaData',EPSrelalpha(:,:,1),...
+%             'LineStyle','none',...
+%             'FaceColor','red');
+%     surf(   Xq2,...
+%             Yq2,...
+%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
+%             'FaceAlpha','interp',...
+%             'AlphaDataMapping','none',...
+%             'AlphaData',MUrelalpha(:,:,1),...
+%             'LineStyle','none',...
+%             'FaceColor','blue');
+%     hold off
+%     colorbar;
+%     caxis([-0.5,0.5])
+%     view(2)
+%     frame = getframe;
+%     writeVideo(v,frame);
 
 %Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
     %Check if nonzero
-    if checking && abs(prev.Ez(yind,xind))>1e-10
+    if checking && abs(prev.Ez(yind,xind))>treshold
         iteration=i; %This is the frame where the E-field in the point becomes nonzero.
         checking=0; %Frame found so checking can stop
     end
 end
-%% Free videofile
-close(gcf)
-close(v)
+% %% Free videofile
+% close(gcf)
+% close(v)
 
 %% Speed validation
 % How will we validate the speed?
@@ -182,13 +214,14 @@ close(v)
 %first source value that is nonzero, we have to drop 2 frames.
 %The propagation distance is the difference in indices between source and
 %point 
+
 speed = abs(meter2index(1.5,conf)-xind)/(iteration-2);%indexdifference/time
 
 disp(['The ratio of the simulation speed and the speed of light is: ' num2str(speed)])
 if speed == 1
-    disp('Speed in simulation is correct')
+    disp('Speed in simulation is sped of light')
 else
-    disp('Error in simulation.')
+    disp(['Speed is not speed of light but v = ' num2str(c*speed) ' m/s'])
 end
 
 %% Free path

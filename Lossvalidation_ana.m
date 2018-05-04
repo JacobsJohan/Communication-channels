@@ -176,7 +176,7 @@ end
 %% Calculation of energy
 H_total = [Hx_temp' Hy_temp' zeros(size(Hx_temp,2),1)];
 E_total = [zeros(size(E_temp,2),1) zeros(size(E_temp,2),1) E_temp'];
-P = abs(sqrt(H_total(:,1).^2+H_total(:,2))).*abs(E_total(:,3));%./(2*1e-3);
+P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(2*1e-3);
 % In theory you should divide by mu but here it is not necessary because we
 % are only interested in the proportionality to 1/r^2.
 

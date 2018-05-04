@@ -22,6 +22,11 @@ addpath(genpath(pwd))
 % To generate an accompanying video, please refer to 'Reflection_Visual'
 
 
+%% NOTE:
+% Due to the construction of the simulation and the diffusion, it is not
+% very straightforward 
+
+
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
 conf.x_length       = 1;
@@ -31,36 +36,53 @@ conf.Resolution_X   = 500;
 conf.Resolution_Y   = 500;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf);
+%% Ask user input
+prompt = 'Perpendicular (0) or under angle(1)?';
+x = input(prompt);
+
+if x ==0
+    perp = 1;
+else 
+    perp = 0;
+end
 
 %% Initialising the different sources 
 Source = struct;
 
 f = 900e6;
-sourceY = 0.5; %For perpendicular
-% sourceY = 0.2;      %For angle
+if perp
+    sourceY = 0.5; %For perpendicular
+else
+    sourceY = 0.2;      %For angle
+end
 value=zeros(1,numel(T));
 value(1)=1;
-Source = addSource( Source,conf,sourceY,0.5,f,value);%sin(2*pi*f*T)
-indY = meter2index(0.5,conf); %Check is always performed at this Y index.
+Source = addSource( Source,conf,sourceY,0.5,f,sin(2*pi*f*T));%,value);
+indY = meter2index(0.5,conf)+1; %Check is always performed at this Y index.
 indX= meter2index(0.65,conf)-1; %0.65=0.7-0.1/2
 
 %% Initializing saves
-pre=[];
-pre2=[];
-pre3=[];
+pre = [];
+pre2 = [];
+pre3 = [];
 
-post=[];
-post2=[];
-post3=[];
+post = [];
+post2 = [];
+post3 = [];
 
-inside=[];
-E_temp2=[];
+inside = [];
+E_temp = [];
+E_temp2 = [];
+
+
 for loop=1:2
     %% Filling the field with objects
 
     %Full reflection:
     if loop==2
-     field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,0.7,sourceY,0.1,3,conf);
+     epsvalue = 50000; %Extremely high value to check (almost) total reflection
+%      epsvalue = 4;     % Normal vamue to check R and T.
+     field(1).EpsRel = draw_rectangle(field(1).EpsRel,epsvalue,0.7,sourceY,0.1,3,conf);
     end
 
     % Simulating losses
@@ -136,10 +158,12 @@ for loop=1:2
                sourceValue = Source(s).value(i);
                results.Ez(sourceXloc,sourceYloc) = sourceValue;
             end
-        prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
+       
 % Comment and uncomment the appropriate part for which calculation you
 % want.
 %     Perpendicular
+    if perp
+        
         if checking && abs(prev.Ez(indY,indX))>0.001
            next=1;
            checking=0;
@@ -160,64 +184,82 @@ for loop=1:2
            inside(2,loop)= prev.Ez(indY,indX+1);
            save3(:,:,loop)= prev.Ez;
         end
-        
-
-%     %Angle
-%         if checking && abs(prev.Ez(indY,indX))>0.001
-%             checking=0;
-%             next=1;
-%         elseif next
-%            next=0
-%            nextCheck=1;
-%            pre(loop)=prev.Ez(indY,indX);
-%            preH(loop)=prev.Hx(indY,indX);
-%            pre2(loop)=prev.Ez(indY+1,indX);
-%            inside(1,loop) = prev.Ez(indY,indX+1);
-%         elseif nextCheck
-%            post(loop)=prev.Ez(indY,indX);
-%            postH(loop)=prev.Hx(indY,indX);
-%            pre3(loop)=prev.Ez(indY+2,indX);
-%            nextCheck=0;
-%            nextnextCheck=1;
-%            inside(2,loop)= prev.Ez(indY,indX+1);
-%         elseif nextnextCheck
-%            post2(loop)=prev.Ez(indY+1,indX);
-%            nextnextCheck=0;
-%            nextnextnextCheck=1;
-%            inside(3,loop)= prev.Ez(indY,indX+1);
-%         elseif nextnextnextCheck
-%            post3(loop)=prev.Ez(indY+2,indX);
-%            nextnextnextCheck=0;
-%            inside(4,loop)= prev.Ez(indY,indX+1);
-%         end
-
-        %Save current fields as old fields for next iteration
+    else
+%     Angle
+        if checking && abs(prev.Ez(indY,indX))>0.001
+            checking=0;
+            next=1;
+        elseif next
+           next=0;
+           nextCheck=1;
+           pre(loop)=prev.Ez(indY,indX);
+           preH(loop)=prev.Hx(indY,indX);
+           pre2(loop)=prev.Ez(indY+1,indX);
+           inside(1,loop) = prev.Ez(indY,indX+1);
+        elseif nextCheck
+           post(loop)=prev.Ez(indY,indX);
+           postH(loop)=prev.Hx(indY,indX);
+           pre3(loop)=prev.Ez(indY+2,indX);
+           nextCheck=0;
+           nextnextCheck=1;
+           inside(2,loop)= prev.Ez(indY,indX+1);
+        elseif nextnextCheck
+           post2(loop)=prev.Ez(indY+1,indX);
+           nextnextCheck=0;
+           nextnextnextCheck=1;
+           inside(3,loop)= prev.Ez(indY,indX+1);
+        elseif nextnextnextCheck
+           post3(loop)=prev.Ez(indY+2,indX);
+           nextnextnextCheck=0;
+           inside(4,loop)= prev.Ez(indY,indX+1);
+        end
     end
-    prev.Ez
+        %Save current fields as old fields for next iteration
+        prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
+   
+   end
 end
 
 %% Reflection coeff (for normal incidence only!)
 %n=sqrt(epsrel*murel)
 n1 = sqrt(1*1);
-n2 = sqrt(1*50000);
-R = ((n1-n2)/(n1+n2))^2;
-T = 1-R;
+n2 = sqrt(1*epsvalue);
+R = abs(((n1-n2)/(n1+n2)));
+T = abs((2*n1/(n1+n2)));
 
 %% Show results
 disp(['Values before reflection for both simulations at pixel of approach: ' num2str(pre)])
+disp(['Values after reflection for both simulations at pixel of approach: ' num2str(post)])
+
+if ~perp
 disp(['Values before reflection for both simulations at under angle: ' num2str(pre2) '. (Only valid for approach under angel)'])
 disp(['Values before reflection for both simulations at under other angle: ' num2str(pre3) '. (Only valid for approach under angel)'])
-
-disp(['Values after reflection for both simulations at pixel of approach: ' num2str(post)])
 disp(['Values after reflection for both simulations at under angle: ' num2str(post2) '. (Only valid for approach under angel)'])
 disp(['Values after reflection for both simulations at under other angle: ' num2str(post3) '. (Only valid for approach under angel)'])
-
+end
 disp(['E-field at index of object when it is not there: ' num2str(inside(1,:))])
 disp(['E-field inside object at point of relection: ' num2str(inside(2,:))])
 
+% Note: Due to the spatial diffusion we get a division by 2 for the
+% amplitude of the E-field in the beginning of the simulation each time
+% frame. Therefore the values are corrected with a factor 2.
+if perp
+    
+ratio = save1(indY,indX,1)/save2(indY,indX+1,1);
+
 disp(['Reflection coefficient = ' num2str(R) ' Transmission coeff = ' num2str(T)])
-disp(['Reflected = ' num2str((post(1)-post(2))*2/R) ' Transmitted = ' num2str(inside(2,2))])
-disp(['Ratio transmitted compared to ingoing = '  num2str(inside(2,2)/pre(1))])
-disp(['Ratio reflected compared to ingoing = '  num2str((post(1)-post(2))/pre(1)*2)])
+disp(['Reflected = ' num2str((post(1)-post(2))) ' Transmitted = ' num2str(inside(1,2))])
+disp(['Ratio transmitted compared to predicted transmission = '  num2str(inside(1,2)/(pre(1)/ratio-ratio*(post(1)-post(2))))])
+disp(['Ratio reflected compared to predicted reflection = '  num2str((post(1)-post(2))/(pre(1)/ratio-inside(1,2))*ratio)])
+end
+
+% T2=1/epsvalue;
+% R2=1-T2;
+% if perp
+% disp(['eprel1/epsrel2 = ' num2str(T2)])   
+% disp(['1-eprel1/epsrel2 = ' num2str(R2)])   
+% disp(['Ratio transmitted compared to predicted transmission based on epsrel values = '  num2str(inside(1,2)/(pre(1)*T2/2))])
+% disp(['Ratio reflected compared to predicted reflection based on epsrel values = '  num2str((post(1)-post(2))/(pre(1)*R2/4))])
+% end
 %% Free path
 rmpath(genpath(pwd))
