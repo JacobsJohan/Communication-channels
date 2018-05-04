@@ -11,26 +11,30 @@ addpath(genpath(pwd))
 %% Initialisations
 
 %Locations and heights of TX and RX
-sloc=2;
-Recloc= 8;
+factor = 3;%Used to quickly adapt values
+sloc=2+factor/2;
+Recloc= 8+factor;
 source_h=2.5;
 rec_h=1.5;
+distance = Recloc - sloc;
+refx = sloc;
+refh = source_h + distance;
 
-
+x_l = 15;
+y_l = 15;
 conf.fmax           = 900e6;
-conf.x_length       = 10;
-conf.y_length       = 10;
-conf.nrOfFrames     = 400;
-conf.Resolution_X   = 500;
-conf.Resolution_Y   = 500;
+conf.x_length       = x_l;
+conf.y_length       = y_l;
+conf.nrOfFrames     = 500;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf );
 
 %% Get indices
-Sindx=meter2index(sloc,conf);
-Rindx=meter2index(Recloc,conf);
-Sindy=meter2index(source_h,conf);
-Rindy=meter2index(rec_h,conf);
+Sindx = meter2index(sloc,conf);
+Rindx = meter2index(Recloc,conf);
+Sindy = meter2index(source_h,conf);
+Rindy = meter2index(rec_h,conf);
+refind = meter2index(refh,conf);
 
 %% Constants
 c       = 3e8;              %Speed of light
@@ -41,18 +45,12 @@ Z0      = sqrt(mu0/eps0);   %Free space impedance
 lambda=c/conf.fmax;
 
 %% Range of position building
-KE=2.5:0.1:7.5;
+KE=2.5+factor:0.1:7.5+factor;
+% KE = [2.5 3];
 %% for loop over location of building
 for j=1:numel(KE)
     disp(['Running KE ' num2str(j) '/' num2str(numel(KE))])
-%% Initialising the fields for simulation 
-conf.fmax           = 900e6;
-conf.x_length       = 10;
-conf.y_length       = 10;
-conf.nrOfFrames     = 500;
-conf.Resolution_X   = 500;
-conf.Resolution_Y   = 500;
-conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
+%% Reinitialising the fields for simulation  
 [ field,conf,T ] = FDTDInit( conf );
 
 
@@ -72,7 +70,7 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 %% Filling the field with objects
     %Knife-edge
     %Both together deliver good results (just don't do sigma on its own)
-    field(1).Sig=draw_rectangle(field(1).Sig,10e10,KE(j),2.5,0.1,5,conf);
+%     field(1).Sig=draw_rectangle(field(1).Sig,10e10,KE(j),2.5,0.1,5,conf);
     field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,KE(j),2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
 
 %% Simulate field
@@ -126,11 +124,15 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
     %Update values for reciever
         recval(j,i)=prev.Ez(Rindy,Rindx);
         soval(j,i)=prev.Ez(Sindy,Sindx);
+        if i< conf.nrOfFrames-1
+            E_rec(i,:,j) = [0 0 prev.Ez(Rindy,Rindx)];
+            E_src(i,:,j) = [0 0 prev.Ez(Sindy,Sindx)];
+            E_ref(i,:,j) = [0 0 prev.Ez(refind,Sindx)];
+        end
         if i>=2
-        Hx_src(j,i-1)=prev.Hx(Sindy,Sindx);
-        Hy_src(j,i-1)=prev.Hy(Sindy,Sindx);
-        Hx_rec(j,i-1)=prev.Hx(Rindy,Rindx);
-        Hy_rec(j,i-1)=prev.Hy(Rindy,Rindx);
+            H_src(i-1,:,j) = [prev.Hx(Sindy,Sindx) prev.Hy(Sindy,Sindx) 0];
+            H_rec(i-1,:,j) = [prev.Hx(Rindy,Rindx) prev.Hy(Rindy,Rindx) 0];
+            H_ref(i-1,:,j) = [prev.Hx(refind,Sindx) prev.Hy(refind,Sindx) 0];
         end
     end
     d1=KE(j)-sloc;
@@ -140,41 +142,62 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
     v(j)=h*sqrt(2/lambda*(1/d1+1/d2));
     
 end
-H_src = [Hx_src Hy_src zeros(size(Hx_src,1),1)];
-E_src = [zeros(size(soval,1),1) zeros(size(soval,1),1) soval];
-H_rec = [Hx_rec Hy_rec zeros(size(Hx_rec,1),1)];
-E_rec = [zeros(size(recval,1),1) zeros(size(recval,1),1) recval];
-P_src = abs(sqrt(H_src(:,1).^2+H_src(:,2).^2)).*abs(E_src(:,3));
-P_rec = abs(sqrt(H_rec(:,1).^2+H_rec(:,2).^2)).*abs(E_rec(:,3));
+P_src = abs(sqrt(H_src(:,1,:).^2+H_src(:,2,:).^2)).*abs(E_src(:,3,:))./(4*pi*1e-7);
+P_rec = abs(sqrt(H_rec(:,1,:).^2+H_rec(:,2,:).^2)).*abs(E_rec(:,3,:))./(4*pi*1e-7);
+P_ref = abs(sqrt(H_ref(:,1,:).^2+H_ref(:,2,:).^2)).*abs(E_ref(:,3,:))./(4*pi*1e-7);
 
-rec = max(abs(recval),[],2);
-src = max(abs(soval),[],2);
-ratio=rec./src;
-v1=[v' rec];
-v2=[v' ratio];
+P_src = squeeze(P_src);
+P_rec = squeeze(P_rec);
+P_ref = squeeze(P_ref);
+%Power sort
+pr = max(P_rec',[],2);
+ps = max(P_src',[],2);
+pref = max(P_ref',[],2);
+ratio1 = pr./ps;
+ratio2 = pref./ps;
+% ratio1 = pr./pref;
+v1=[v' pr];
+v2=[v' ratio1];
+v3 =[v' ps];
+v4=[v' pref];
 
 [~,idx] = sort(v1(:,1));
 v1 = v1(idx,:);
 [~,idx] = sort(v2(:,1));
 v2 = v2(idx,:);
+[~,idx] = sort(v3(:,1));
+v3 = v3(idx,:);
+[~,idx] = sort(v4(:,1));
+v4 = v4(idx,:);
+% 
+% %E-fiedl sort
+% rec = max(abs(recval),[],2);
+% src = max(abs(soval),[],2);
+% ratio=rec./src;
+% v1=[v' rec];
+% v2=[v' ratio];
+% 
+% [~,idx] = sort(v1(:,1));
+% v1 = v1(idx,:);
+% [~,idx] = sort(v2(:,1));
+% v2 = v2(idx,:);
 
 %Theory
-vth=5:0.1:13;
+vth=linspace(5,13,numel(KE));
 
 Fv=1./(2*pi^2*vth.^2); %Includes already squaring and abs
 Le=10*log10(Fv);
+% Le=10*log10(Fv./pref');
 
 %Plot results
 figure
-plot(v2(:,1),10*log10(v2(:,2)))
-title('Ratio of max E-fields in reciever and source i.f.o. \nu')
+plot(v2(:,1),10*log10(v1(:,2))-10*log10(v4(:,2)))
+title('Ratio of power in reciever and source i.f.o. \nu')
 xlabel('\nu')
-ylabel('max(E_{rec})/max(E_{src}) (dB)')
+ylabel('max(P_{rec})/max(P_{src}) (dB)')
 hold on 
 plot(vth,Le)
 legend('Simulation result','Theory')
-hold on
-plot(P_rec./P_src)
 
 %% Free path
 rmpath(genpath(pwd))

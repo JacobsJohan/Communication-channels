@@ -62,18 +62,15 @@ indY = meter2index(0.5,conf)+1; %Check is always performed at this Y index.
 indX= meter2index(0.65,conf)-1; %0.65=0.7-0.1/2
 
 %% Initializing saves
-pre = [];
-pre2 = [];
-pre3 = [];
+pre = []; %Value in point before reflection
+pre2 = [];  %Value in point before reflection at different position or time instance
+pre3 = [];  %Value in point before reflection
 
-post = [];
+post = []; %Value in same point as pre after reflection
 post2 = [];
 post3 = [];
 
-inside = [];
-E_temp = [];
-E_temp2 = [];
-
+inside = [];    %Field inside object
 
 for loop=1:2
     %% Filling the field with objects
@@ -127,9 +124,6 @@ for loop=1:2
     prev.Ez=field(1).Ez;
     prev.Hx=field(1).Hx;
     prev.Hy=field(1).Hy;
-
-    magnitudebefore=0;
-    magnitudeafter=0;
     
     %Booleans to steer the checking
     checking=1;
@@ -162,15 +156,14 @@ for loop=1:2
 % Comment and uncomment the appropriate part for which calculation you
 % want.
 %     Perpendicular
-    if perp
-        
+    if perp  
         if checking && abs(prev.Ez(indY,indX))>0.001
            next=1;
            checking=0;
            pre(loop)=prev.Ez(indY,indX);
-           preH(loop)=prev.Hx(indY,indX);
-           save1(:,:,loop)= prev.Ez;
-        elseif next %Due to the index where we check we have to wait 1 extra cycle
+%            preH(loop)=prev.Hx(indY,indX);
+           save1(:,:,loop)= prev.Ez; %Saves are for observing E-field
+        elseif next %Due to the index where we check we have to wait 1 extra cycle for propagation
            next=0;
            nextCheck=1;
            pre2(loop)=prev.Ez(indY,indX-1);
@@ -179,7 +172,7 @@ for loop=1:2
            save2(:,:,loop)= prev.Ez;
         elseif nextCheck
            post(loop)=prev.Ez(indY,indX);
-           postH(loop)=prev.Hx(indY,indX);
+%            postH(loop)=prev.Hx(indY,indX);
            nextCheck=0;
            inside(2,loop)= prev.Ez(indY,indX+1);
            save3(:,:,loop)= prev.Ez;

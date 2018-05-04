@@ -30,6 +30,7 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 %% Changing epsrel for entire field
 % n = sqrt(epsrel*murel);
 % We want n of 1.5, n=c/v, murel = 1;
+% Select here a wanted n
 n=1;
 n=1.2;
 epsrel = n^2;
@@ -43,9 +44,9 @@ field(1).EpsRel(:) = epsrel;
 %  one should alter the treshold. In this kind of simulations it is only
 %  encouraged to check the speed of light. One could say that if the field
 %  is small enough, we can neglect it so 'it is not yet there', but picking
-%  a treshold in that case is hard. So to be mathemqtically correct and
+%  a treshold in that case is hard. So to be mathematically correct and
 %  to avoid suspicious assumptions, one should only validate the speed if
-%  n=1. We checked other speeds with q treshold of 1e-7 and 1e-8 which gave good
+%  n=1. We checked other speeds with a treshold of 1e-7 and 1e-8 which gave good
 %  results in a broad range of realistic n~=1 values.
 
 if n == 1
@@ -222,6 +223,7 @@ if speed == 1
     disp('Speed in simulation is sped of light')
 else
     disp(['Speed is not speed of light but v = ' num2str(c*speed) ' m/s'])
+    disp(['v/c ratio = ' num2str(speed) ', 1/n = ' num2str(1/n)]);
 end
 
 %% Free path

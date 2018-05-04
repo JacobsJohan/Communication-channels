@@ -14,8 +14,8 @@ addpath(genpath(pwd))
 % different v are done in 'Knife_Edge.m'
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
-conf.x_length       = 10;
-conf.y_length       = 10;
+conf.x_length       = 15;
+conf.y_length       = 15;
 conf.nrOfFrames     = 300;
 conf.Resolution_X   = 500;
 conf.Resolution_Y   = 500;
@@ -23,8 +23,9 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 [ field,conf,T ] = FDTDInit( conf );
 
 %Defining locations and heights of TX,RX
-sloc=2;
-Recloc= 8;
+factor = 3;
+sloc=2+factor/2;
+Recloc= 8+factor;
 source_h=2.5;
 rec_h=1.5;
 
@@ -34,7 +35,7 @@ Source = struct;
 f = 900e6;
 Source = addSource( Source,conf,source_h,sloc,f,sin(2*pi*f*T));
 %% Filling the field with objects
-buildx=3;
+buildx=3+factor;
 
 %Knife-edge
 field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,buildx,2.5,0.1,5,conf);
@@ -49,7 +50,7 @@ field(1).Sig=draw_rectangle(field(1).Sig,10e10,buildx,2.5,0.1,5,conf);
 
 
 %% Prep video
-v = VideoWriter('KE-model','MPEG-4');
+v = VideoWriter('KE-model_15','MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()

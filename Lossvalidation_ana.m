@@ -87,9 +87,9 @@ prev.Ez=field(1).Ez;
 prev.Hx=field(1).Hx;
 prev.Hy=field(1).Hy;
 
-E_temp=[];
-Hx_temp=[];
-Hy_temp=[];
+E_temp=[]; %Save E-field values
+Hx_temp=[]; %Save Hx-field values
+Hy_temp=[]; %Save Hy-field values
 sz=size(prev.Ez);
 for i=1:conf.nrOfFrames-1
 %%Calculate new fields
@@ -157,26 +157,21 @@ for i=1:conf.nrOfFrames-1
     
   %Track 1st nonzero source value and its evolution over 1 line until reflection  
     if i>=2 && i < sz(1)/2 && i< sz(2)/2
-        nonZero(i-1)=numel(find(prev.Ez));  
         E_fields(:,:,i-1)=prev.Ez; %Used to see the evolution manually
         E_temp=[E_temp prev.Ez(meter2index(sX,conf)+i-1,meter2index(sY,conf)+1)]; %Save E_field evolution on 1 row. 
     end
+    % H field follows a time instance later
     if i>=3 && i < sz(1)/2+1 && i< sz(2)/2+1
         Hx_temp=[Hx_temp prev.Hx(meter2index(sX,conf)+i-2,meter2index(sY,conf)+1)];
         Hy_temp=[Hy_temp prev.Hy(meter2index(sX,conf)+i-2,meter2index(sY,conf)+1)];    
     end
-    if i==2
-        save1=prev.Ez;
-    elseif i==3
-        save2=prev.Hx;
-        save3=prev.Hy;
     end
 end
 
 %% Calculation of energy
 H_total = [Hx_temp' Hy_temp' zeros(size(Hx_temp,2),1)];
 E_total = [zeros(size(E_temp,2),1) zeros(size(E_temp,2),1) E_temp'];
-P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(2*1e-3);
+P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(4*pi*1e-7);
 % In theory you should divide by mu but here it is not necessary because we
 % are only interested in the proportionality to 1/r^2.
 
@@ -187,24 +182,23 @@ P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(2*1e-3);
 
 %% Calculating ratios
 ratio = E_temp(2:end)./ E_temp(1:end-1);
+r = 1:numel(P)+1;
+mainRatio = E_temp(1:end)./ E_temp(1); %Compare with starting value;
+%% Plotting
 figure
 plot(ratio)
 figure
 plot(P)
 hold on
-r = 1:numel(P)+1;
 plot(P(1)./r./r,'*')
 legend('power ifo distance','P(1)/r^2')
 hold off
-mainRatio = E_temp(1:end)./ E_temp(1); %Compare with starting value;
 xlabel('Distance from source (n*\delta)')
 ylabel('P = E.B/\mu_0')
 title('Evolution of power in function of distance to source.')
-figure
-plot(mainRatio)
-
-
-
+% figure
+% plot(mainRatio)
+%% Output
 disp(['Ratio of E-field compared to itself 1 time instance ago and on previous location:' num2str(ratio)])
 disp(['Ratio of E-field compared to original source value:' num2str(mainRatio)])
 %% Draw and export to movie 

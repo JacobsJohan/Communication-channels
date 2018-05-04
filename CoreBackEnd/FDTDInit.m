@@ -6,7 +6,6 @@ else
 end
 conf.deltat = conf.delta/3e8/sqrt(2);   %Calculate temporal delta
 T = (0:conf.nrOfFrames-1)*conf.deltat;  %Create temporal axis
-
 conf.Xnum = round(conf.x_length/conf.delta);
 conf.Ynum = round(conf.y_length/conf.delta);
 
