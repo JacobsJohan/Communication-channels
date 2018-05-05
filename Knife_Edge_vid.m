@@ -16,7 +16,7 @@ addpath(genpath(pwd))
 conf.fmax           = 900e6;
 conf.x_length       = 15;
 conf.y_length       = 15;
-conf.nrOfFrames     = 300;
+conf.nrOfFrames     = 500;
 conf.Resolution_X   = 500;
 conf.Resolution_Y   = 500;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -33,9 +33,10 @@ rec_h=1.5;
 Source = struct;
 
 f = 900e6;
-Source = addSource( Source,conf,source_h,sloc,f,sin(2*pi*f*T));
+Source = addSource( Source,conf,source_h,sloc,f,exp(-((T-30*conf.deltat)./10./conf.deltat).^2));%sin(2*pi*f*T));
 %% Filling the field with objects
 buildx=3+factor;
+buildx = 10,5;
 
 %Knife-edge
 field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,buildx,2.5,0.1,5,conf);
@@ -50,7 +51,7 @@ field(1).Sig=draw_rectangle(field(1).Sig,10e10,buildx,2.5,0.1,5,conf);
 
 
 %% Prep video
-v = VideoWriter('KE-model_15','MPEG-4');
+v = VideoWriter('KE-model_10.5','MPEG-4');
 v.Quality = 100; 
 open(v);
 figure()

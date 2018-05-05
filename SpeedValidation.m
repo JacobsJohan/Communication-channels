@@ -216,6 +216,10 @@ for i=1:conf.nrOfFrames-1
     end
     save(1,i)=prev.Ez(yind,x2ind);
     save(2,i)=prev.Ez(yind,yind);
+    save(3,i)=prev.Ez(yind,yind+1);
+    for j=1:15
+    save(3+j,i)=prev.Ez(yind,yind+j+1);
+    end
     if checkMax
         
        if  prev.Ez(yind,x2ind)>= prevval

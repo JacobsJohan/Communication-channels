@@ -25,7 +25,7 @@ y_l = 15;
 conf.fmax           = 900e6;
 conf.x_length       = x_l;
 conf.y_length       = y_l;
-conf.nrOfFrames     = 500;
+conf.nrOfFrames     = 700;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
 [ field,conf,T ] = FDTDInit( conf );
 
@@ -46,8 +46,9 @@ Z0      = sqrt(mu0/eps0);   %Free space impedance
 lambda=c/conf.fmax;
 
 %% Range of position building
-KE=2.5+factor:0.1:7.5+factor;
-% KE = [2.5 3];
+% KE=2.5+factor:0.1:7.5+factor;
+KE=3+factor:0.1:6.5+factor;
+% KE = [2.5+factor 3+factor];
 %% for loop over location of building
 for j=1:numel(KE)
     disp(['Running KE ' num2str(j) '/' num2str(numel(KE))])
@@ -62,7 +63,7 @@ Sc      = c*deltat/delta;  	%Courant number
 %% Initialising the sources
 Source = struct;
 f = 900e6;
-Source = addSource( Source,conf,source_h,sloc,f,sin(2*pi*f*T));
+Source = addSource( Source,conf,source_h,sloc,f,3*exp(-((T-30*conf.deltat)./10./conf.deltat).^2));%sin(2*pi*f*T));
 
 %% Simulating losses
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
@@ -71,9 +72,9 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 %% Filling the field with objects
     %Knife-edge
     %Both together deliver good results (just don't do sigma on its own)
-%     field(1).Sig=draw_rectangle(field(1).Sig,10e10,KE(j),2.5,0.1,5,conf);
-    field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,KE(j),2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
-
+    field(1).Sig=draw_rectangle(field(1).Sig,10e10,KE(j),2.5,0.1,5,conf);
+%     field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,KE(j),2.5,0.1,5,conf);%0.1-0.5m is a good thickness for the metal plate. If you want thinner you need higher epsrel I think.
+% 
 %% Simulate field
 
     MUXrel  = field(1).MuRel(1:2:end,2:2:end);
@@ -151,7 +152,7 @@ P_ref = squeeze(P_ref);
 %Power sort
 pr = max(P_rec',[],2);
 ps = max(P_src',[],2);
-pref = max(P_ref',[],2);
+pref = max(P_ref(1:380,:)',[],2);
 % ratio1 = pr./ps;
 ratio2 = pref./ps;
 ratio1 = pr./pref;
@@ -182,7 +183,7 @@ v4 = v4(idx,:);
 % v2 = v2(idx,:);
 
 %Theory
-vth=linspace(5,13,numel(KE));
+vth=linspace(5,8,numel(KE));
 
 Fv=1./(2*pi^2*vth.^2); %Includes already squaring and abs
 Le=10*log10(Fv);
@@ -190,13 +191,14 @@ Le=10*log10(Fv);
 
 %Plot results
 figure
-plot(v2(:,1),10*log10(v2(:,2)))
-title('Ratio of power in reciever and source i.f.o. \nu')
+plot(v2(:,1),10*log10(v2(:,2)),'*')
+title('Extra loss due to NLOS i.f.o. \nu')
 xlabel('\nu')
-ylabel('max(P_{rec})/max(P_{src}) (dB)')
+ylabel('|F(\nu)^2| (dB)')
 hold on 
 plot(vth,Le)
 legend('Simulation result','Theory')
+
 
 %% Free path
 rmpath(genpath(pwd))
