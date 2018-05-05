@@ -31,7 +31,7 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 % n = sqrt(epsrel*murel);
 % We want n of 1.5, n=c/v, murel = 1;
 % Select here a wanted n
-% n=1;
+n=1;
 n=1.2;
 epsrel = n^2;
 field(1).EpsRel(:) = epsrel;
@@ -64,7 +64,7 @@ x = 2.5;
 x2 = 2;
 y = 1.5;
 xind = meter2index(x,conf);
-yind = meter2index(y,conf);
+yind = meter2index(y,conf)+1;
 x2ind = meter2index(x2,conf);
 
 checking=1;%Boolean 
@@ -214,7 +214,7 @@ for i=1:conf.nrOfFrames-1
         iteration=i; %This is the frame where the E-field in the point becomes nonzero.
         checking=0; %Frame found so checking can stop
     end
-    save(1,i)=prev.Ez(yind,xind);
+    save(1,i)=prev.Ez(yind,x2ind);
     save(2,i)=prev.Ez(yind,yind);
     if checkMax
         
@@ -246,13 +246,13 @@ end
 %The propagation distance is the difference in indices between source and
 %point 
 
-speed = abs(meter2index(1.5,conf)-xind)/(iteration-2);%indexdifference/time
-speed_max = abs(meter2index(1.5,conf)-x2ind)/(rec_i-src_i);
+speed = abs(meter2index(1.5,conf)+1-xind)/(iteration-2);%indexdifference/time
+speed_max = abs(meter2index(1.5,conf)+1-x2ind)/(rec_i-src_i);
 
 disp(['The ratio of the simulation speed and the speed of light is: ' num2str(speed)])
 if n==1
     if speed == 1
-        disp('Speed in simulation is sped of light')
+        disp('Speed in simulation is speed of light')
     else
         disp(['Error in simulation'])
     end
