@@ -35,6 +35,7 @@ Rindx = meter2index(Recloc,conf);
 Sindy = meter2index(source_h,conf);
 Rindy = meter2index(rec_h,conf);
 refind = meter2index(refh,conf);
+refxind = meter2index(refx,conf);
 
 %% Constants
 c       = 3e8;              %Speed of light
@@ -117,8 +118,6 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
            results.Ez(sourceXloc,sourceYloc) = sourceValue;
         end
     
-    
-
     %Save current fields as old fields for next iteration
         prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     %Update values for reciever
@@ -153,9 +152,9 @@ P_ref = squeeze(P_ref);
 pr = max(P_rec',[],2);
 ps = max(P_src',[],2);
 pref = max(P_ref',[],2);
-ratio1 = pr./ps;
+% ratio1 = pr./ps;
 ratio2 = pref./ps;
-% ratio1 = pr./pref;
+ratio1 = pr./pref;
 v1=[v' pr];
 v2=[v' ratio1];
 v3 =[v' ps];
@@ -187,11 +186,11 @@ vth=linspace(5,13,numel(KE));
 
 Fv=1./(2*pi^2*vth.^2); %Includes already squaring and abs
 Le=10*log10(Fv);
-% Le=10*log10(Fv./pref');
+% Le=10*log10(Fv./v4(:,2)');
 
 %Plot results
 figure
-plot(v2(:,1),10*log10(v1(:,2))-10*log10(v4(:,2)))
+plot(v2(:,1),10*log10(v2(:,2)))
 title('Ratio of power in reciever and source i.f.o. \nu')
 xlabel('\nu')
 ylabel('max(P_{rec})/max(P_{src}) (dB)')

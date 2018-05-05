@@ -31,7 +31,7 @@ field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
 % n = sqrt(epsrel*murel);
 % We want n of 1.5, n=c/v, murel = 1;
 % Select here a wanted n
-n=1;
+% n=1;
 n=1.2;
 epsrel = n^2;
 field(1).EpsRel(:) = epsrel;
@@ -57,14 +57,23 @@ else
     treshold = 1e-7;
 end
 
+% Circumvension: look for maxima 
 
 %%  Speedtest point
-x=2.5;
-y=1.5;
-xind = meter2index(2.5,conf);
-yind = meter2index(1.5,conf);
+x = 2.5;
+x2 = 2;
+y = 1.5;
+xind = meter2index(x,conf);
+yind = meter2index(y,conf);
+x2ind = meter2index(x2,conf);
 
 checking=1;%Boolean 
+checkMax = 1;
+sourceMax = 1;
+
+prevval = -50;
+prevsrc = -50;
+
 
 %% Prep video
 % v = VideoWriter('SpeedVal','MPEG-4');
@@ -136,11 +145,21 @@ for i=1:conf.nrOfFrames-1
     results.Ez(2:end-1,2:end-1) =    CEZE(2:end-1,2:end-1).*     prev.Ez(2:end-1,2:end-1) +...
                                         CEZH(2:end-1,2:end-1).*(    (results.Hy(2:end,2:end-1)   -   results.Hy((2:end)-1,2:end-1))-...
                                                                     (results.Hx(2:end-1,2:end)   -   results.Hx(2:end-1,(2:end)-1)));
+
 %Update sources
     for s=1:numel(Source)
        sourceXloc = round(Source(s).X_loc(i)/conf.delta)+1;
        sourceYloc = round(Source(s).Y_loc(i)/conf.delta)+1;
        sourceValue = Source(s).value(i);
+       % Check if source increasing
+       if sourceMax
+           if sourceValue >= prevsrc 
+                prevsrc = sourceValue;
+           else %Value decreases, meaning previous was max
+               sourceMax = 0;
+               src_i = i;
+           end
+       end
        results.Ez(sourceXloc,sourceYloc) = sourceValue;
     end
     
@@ -195,6 +214,17 @@ for i=1:conf.nrOfFrames-1
         iteration=i; %This is the frame where the E-field in the point becomes nonzero.
         checking=0; %Frame found so checking can stop
     end
+    save(1,i)=prev.Ez(yind,xind);
+    save(2,i)=prev.Ez(yind,yind);
+    if checkMax
+        
+       if  prev.Ez(yind,x2ind)>= prevval
+           prevval = prev.Ez(yind,x2ind);  
+       else
+           rec_i = i-1;
+           checkMax = 0;
+       end
+    end
 end
 % %% Free videofile
 % close(gcf)
@@ -217,14 +247,19 @@ end
 %point 
 
 speed = abs(meter2index(1.5,conf)-xind)/(iteration-2);%indexdifference/time
+speed_max = abs(meter2index(1.5,conf)-x2ind)/(rec_i-src_i);
 
 disp(['The ratio of the simulation speed and the speed of light is: ' num2str(speed)])
-if speed == 1
-    disp('Speed in simulation is sped of light')
+if n==1
+    if speed == 1
+        disp('Speed in simulation is sped of light')
+    else
+        disp(['Error in simulation'])
+    end
 else
-    disp(['Speed is not speed of light but v = ' num2str(c*speed) ' m/s'])
+    disp(['Speed is v = ' num2str(c*speed) ' m/s'])
     disp(['v/c ratio = ' num2str(speed) ', 1/n = ' num2str(1/n)]);
 end
-
+disp(['The ratio of the simulation speed and the speed of light looking at propagation of max is: ' num2str(speed_max)])
 %% Free path
 rmpath(genpath(pwd))
