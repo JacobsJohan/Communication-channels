@@ -21,7 +21,9 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 %% Initialising the different sources 
 Source = struct;
 f = 900e6;
-Source = addSource( Source,conf,1.5,1.5,f,sin(2*pi*f*T) );
+sourceX = 1.5;
+sourceY = 1.5;
+Source = addSource( Source,conf,sourceX,sourceY,f,sin(2*pi*f*T) );
 %% Simulating losses
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
 field(1).Sig(:) = 8e-15;    % Conductivity of air is [3e-15, 8e-15];
@@ -62,7 +64,7 @@ end
 %%  Speedtest point
 x = 2.5;
 x2 = 2;
-y = 1.5;
+y = sourceY;
 xind = meter2index(x,conf);
 yind = meter2index(y,conf)+1;
 x2ind = meter2index(x2,conf);
@@ -214,12 +216,6 @@ for i=1:conf.nrOfFrames-1
         iteration=i; %This is the frame where the E-field in the point becomes nonzero.
         checking=0; %Frame found so checking can stop
     end
-    save(1,i)=prev.Ez(yind,x2ind);
-    save(2,i)=prev.Ez(yind,yind);
-    save(3,i)=prev.Ez(yind,yind+1);
-    for j=1:15
-    save(3+j,i)=prev.Ez(yind,yind+j+1);
-    end
     if checkMax
         
        if  prev.Ez(yind,x2ind)>= prevval
@@ -250,8 +246,10 @@ end
 %The propagation distance is the difference in indices between source and
 %point 
 
-speed = abs(meter2index(1.5,conf)+1-xind)/(iteration-2);%indexdifference/time
-speed_max = abs(meter2index(1.5,conf)+1-x2ind)/(rec_i-src_i);
+speed = abs(meter2index(sourceX,conf)+1-xind)/(iteration-2);
+%indexdifference/time
+speed_max = abs(meter2index(sourceX,conf)+1-x2ind)/(rec_i-src_i)*sqrt(2);
+%Factor sqrt(2) here needed due to the relative difference in time
 
 disp(['The ratio of the simulation speed and the speed of light is: ' num2str(speed)])
 if n==1

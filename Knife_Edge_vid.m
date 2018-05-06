@@ -36,7 +36,7 @@ f = 900e6;
 Source = addSource( Source,conf,source_h,sloc,f,exp(-((T-30*conf.deltat)./10./conf.deltat).^2));%sin(2*pi*f*T));
 %% Filling the field with objects
 buildx=3+factor;
-buildx = 10,5;
+% buildx = 10,5;
 
 %Knife-edge
 field(1).EpsRel = draw_rectangle(field(1).EpsRel,50000,buildx,2.5,0.1,5,conf);
