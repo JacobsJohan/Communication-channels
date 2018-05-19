@@ -28,7 +28,7 @@ sY=4;
 Source = addSource( Source,conf,sX,sY,f,5*exp(-((T-30*conf.deltat)./10./conf.deltat).^2) );
 
 %% Measurement start
-y = 6;
+y = 7;
 yind = meter2index(y,conf);
 
 %% Simulating losses
@@ -147,22 +147,52 @@ E_line = squeeze(E_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc
 Hx_line = squeeze(Hx_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc)+1:end));
 Hy_line = squeeze(Hy_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc)+1:end));
 
+E_temp = E_line(1:end-1,:);
+Hx_temp = Hx_line;
+Hy_temp = Hy_line(1:end-1,:);
+
 % for i=1:size(Hx_line,1)
 %    E_temp(i)= E_line(i,i); 
 %    Hx_temp(i)= Hx_line(i,i); 
 %    Hy_temp(i)= Hy_line(i,i); 
 % end
-for i=1:size(Hx_line,1)
-   [E_temp(i) j]= max(E_line(i,:)); 
-   Hx_temp(i)= Hx_line(i,j); 
-   Hy_temp(i)= Hy_line(i,j); 
-end
+% for i=1:size(Hx_line,1)
+%    [E_temp(i) j]= max(E_line(i,:)); 
+%    Hx_temp(i)= Hx_line(i,j); 
+%    Hy_temp(i)= Hy_line(i,j); 
+% end
 % E_temp=E_temp(73:85);
 % Hx_temp=Hx_temp(73:85);
 % Hy_temp=Hy_temp(73:85);
 %% Calculation of energy
-P = abs(sqrt(Hx_temp'.^2+Hy_temp'.^2)).*abs(E_temp');%./(4*pi*1e-7);
-P=P(1:100);
+% P = abs(sqrt(Hx_temp'.^2+Hy_temp'.^2)).*abs(E_temp');%./(4*pi*1e-7);
+% P=P(1:100);
+poynting = abs(sqrt(Hx_temp.^2+Hy_temp.^2)).*abs(E_temp);%./(4*pi*1e-7);
+[pulseMax,I] = max(poynting',[],2);
+xpts = yind:yind+length(pulseMax)-1;
+distances = xpts*delta;
+figure;
+plot(pulseMax)
+figure;
+plot(distances,pulseMax)
+title('Empirical results');
+
+
+pulseUnderExam = pulseMax(40:140);
+distUnderExam = distances(40:140)-sourceYloc*delta;
+P=pulseUnderExam;
+figure;
+plot(distUnderExam,pulseUnderExam)
+title('Zoomed')
+figure
+dx = 0.033;
+distances = linspace(yind,yind+length(pulseMax)*dx,length(pulseMax));
+xaxis = 1:556;
+plot(distances,pulseMax);
+fit = pulseMax(1)./distances(2:end).^2;
+hold on
+plot(distances(2:end),fit)
+
 % In theory you should divide by mu but here it is not necessary because we
 % are only interested in the proportionality to 1/r^2.
 mainPRatio = P(1:end)./ P(1);
@@ -197,6 +227,7 @@ plot(abs(Hy_temp))
 hold on
 plot(abs(Hy_temp(1))./r,'o')
 hold off
+title('Hy')
 
 figure
 r = y:delta:y+99*delta
