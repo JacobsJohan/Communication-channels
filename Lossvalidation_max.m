@@ -125,74 +125,42 @@ for i=1:conf.nrOfFrames-1
                 prevsrc = sourceValue;
            else %Value decreases, meaning previous was max
                sourceMax = 0;
-               src_i = i;
+               src_i = i-1;
            end
        end
        results.Ez(sourceXloc,sourceYloc) = sourceValue;
     end
     
-% %Plot calculated fields
-% 
-% % Prepare for plotting
-% 
-% 
-%     [M,N] = size(results.(conf.ToPrint));
-%     [X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
-% 
-%     ToPrintq=results.(conf.ToPrint);
-%     temp = ToPrintq(:,:,20:end);
-%     absMaxToPrint = max(ToPrintq(:));
-% 
-% 
-% % Print
-%     disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
-%     surf(X,Y,ToPrintq,...
-%             'LineStyle','none',...
-%             'FaceColor','interp');
-%     hold on 
-%     surf(   Xq2,...
-%             Yq2,...
-%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
-%             'FaceAlpha','interp',...
-%             'AlphaDataMapping','none',...
-%             'AlphaData',EPSrelalpha(:,:,1),...
-%             'LineStyle','none',...
-%             'FaceColor','red');
-%     surf(   Xq2,...
-%             Yq2,...
-%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
-%             'FaceAlpha','interp',...
-%             'AlphaDataMapping','none',...
-%             'AlphaData',MUrelalpha(:,:,1),...
-%             'LineStyle','none',...
-%             'FaceColor','blue');
-%     hold off
-%     colorbar;
-%     caxis([-0.5,0.5])
-%     view(2)
-%     frame = getframe;
-%     writeVideo(v,frame);
 
 %Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
-  %Track 1st nonzero source value and its evolution over 1 line until reflection  
-    if i>=2 && i < sz(1)/2 && i< sz(2)/2
-        E_fields(:,:,i-1)=prev.Ez; %Used to see the evolution manually
-        E_temp=[E_temp prev.Ez(meter2index(sX,conf)+i-1,meter2index(sY,conf)+1)]; %Save E_field evolution on 1 row. 
-       
-    end
-    %H field follows a time instance later
-    if i>=3 && i < sz(1)/2+1 && i< sz(2)/2+1
-        Hx_temp=[Hx_temp prev.Hx(meter2index(sX,conf)+i-2,meter2index(sY,conf)+1)];
-        Hy_temp=[Hy_temp prev.Hy(meter2index(sX,conf)+i-2,meter2index(sY,conf)+1)];    
-    end
+    E_fields(:,:,i)=prev.Ez;
+    Hx_fields(:,:,i)=prev.Hx;
+    Hy_fields(:,:,i)=prev.Hy;
 end
+%Get line
+E_line = squeeze(E_fields(meter2index(sX,conf)+1,meter2index(sY,conf)+1:end,src_i:end));
+Hx_line = squeeze(Hx_fields(meter2index(sX,conf)+1,meter2index(sY,conf)+1:end,src_i-1:end));
+Hy_line = squeeze(Hy_fields(meter2index(sX,conf)+1,meter2index(sY,conf)+1:end,src_i-1:end));
+% for i=1:size(Hx_line,1)
+%    E_temp(i)= E_line(i,i); 
+%    Hx_temp(i)= Hx_line(i,i); 
+%    Hy_temp(i)= Hy_line(i,i); 
+% end
+% for i=1:size(Hx_line,1)
+%    E_temp(i)= max(E_line(i,:)); 
+%    Hx_temp(i)= Hx_line(i,i); 
+%    Hy_temp(i)= Hy_line(i,i); 
+% end
 
+for i=1:size(Hx_line,1)
+   [E_temp(i) j]= max(E_line(i,:)); 
+   Hx_temp(i)= Hx_line(i,j); 
+   Hy_temp(i)= Hy_line(i,j); 
+end
 %% Calculation of energy
-H_total = [Hx_temp' Hy_temp' zeros(size(Hx_temp,2),1)];
-E_total = [zeros(size(E_temp,2),1) zeros(size(E_temp,2),1) E_temp'];
-P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(4*pi*1e-7);
+P = abs(sqrt(Hx_temp'.^2+Hy_temp'.^2)).*abs(E_temp');%./(4*pi*1e-7);
 % In theory you should divide by mu but here it is not necessary because we
 % are only interested in the proportionality to 1/r^2.
 
@@ -207,7 +175,16 @@ r = 1:numel(P)+1;
 mainRatio = E_temp(1:end)./ E_temp(1); %Compare with starting value;
 %% Plotting
 figure
-plot(ratio)
+yyaxis left
+plot(E_temp)
+hold on
+plot(E_temp(1)./r,'-o')
+yyaxis right
+plot(Hx_temp)
+plot(abs(Hy_temp))
+plot(Hx_temp(1)./r,'*')
+plot(abs(Hy_temp(1))./r,'o')
+legend('Ez','1/r','Hx','Hy','1/r','1/r')
 figure
 plot(P)
 hold on

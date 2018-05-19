@@ -5,9 +5,9 @@ addpath(genpath(pwd))
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
-conf.x_length       = 3;
-conf.y_length       = 3;
-conf.nrOfFrames     = 50;
+conf.x_length       = 10;
+conf.y_length       = 10;
+conf.nrOfFrames     = 200;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -17,9 +17,13 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 Source = struct;
 
 f = 900e6; %freq of source
-sourceX = 1.5; %Horizontal
-sourceY = 1;   %Vertical
-Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
+% sourceX = 1.5; %Horizontal
+% sourceY = 1;   %Vertical
+sX=2.5;
+sY=4;
+% Source = addSource( Source,conf,sourceY,sourceX,f,sin(2*pi*f*T) );
+Source = addSource( Source,conf,sX,sY,f,5*exp(-((T-30*conf.deltat)./10./conf.deltat).^2) );
+
 
 %% Filling the field with objects
 

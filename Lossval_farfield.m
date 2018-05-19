@@ -10,9 +10,9 @@ addpath(genpath(pwd))
 
 %% Initialising the fields for simulation 
 conf.fmax           = 900e6;
-conf.x_length       = 1;
-conf.y_length       = 1;
-conf.nrOfFrames     = 100;
+conf.x_length       = 10;
+conf.y_length       = 10;
+conf.nrOfFrames     = 300;
 conf.Resolution_X   = 300;
 conf.Resolution_Y   = 300;
 conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'  
@@ -22,11 +22,14 @@ conf.ToPrint        = 'Ez';  %Needs to be field of the structure 'Field'
 Source = struct;
 
 f = 900e6;
-sX=conf.x_length/2;
-sY=conf.y_length/2;
+sX=2.5;
+sY=4;
 % Source = addSource( Source,conf,sX,sY,f,sin(2*pi*f*T) );
-Source = addSource( Source,conf,sX,sY,f,3*exp(-((T-30*conf.deltat)./10./conf.deltat).^2) );
+Source = addSource( Source,conf,sX,sY,f,5*exp(-((T-30*conf.deltat)./10./conf.deltat).^2) );
 
+%% Measurement start
+y = 6;
+yind = meter2index(y,conf);
 
 %% Simulating losses
 field(1).SigM(:) = 0;       % No magnetic conductivity in the air
@@ -125,77 +128,46 @@ for i=1:conf.nrOfFrames-1
                 prevsrc = sourceValue;
            else %Value decreases, meaning previous was max
                sourceMax = 0;
-               src_i = i;
+               src_i = i-1;
            end
        end
        results.Ez(sourceXloc,sourceYloc) = sourceValue;
     end
     
-% %Plot calculated fields
-% 
-% % Prepare for plotting
-% 
-% 
-%     [M,N] = size(results.(conf.ToPrint));
-%     [X,Y] = meshgrid(linspace(0,conf.x_length,N), linspace(0,conf.y_length,M));
-% 
-%     ToPrintq=results.(conf.ToPrint);
-%     temp = ToPrintq(:,:,20:end);
-%     absMaxToPrint = max(ToPrintq(:));
-% 
-% 
-% % Print
-%     disp(['Frame: ',num2str(i),' / ',num2str(conf.nrOfFrames)])
-%     surf(X,Y,ToPrintq,...
-%             'LineStyle','none',...
-%             'FaceColor','interp');
-%     hold on 
-%     surf(   Xq2,...
-%             Yq2,...
-%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint,...
-%             'FaceAlpha','interp',...
-%             'AlphaDataMapping','none',...
-%             'AlphaData',EPSrelalpha(:,:,1),...
-%             'LineStyle','none',...
-%             'FaceColor','red');
-%     surf(   Xq2,...
-%             Yq2,...
-%             ones(conf.Resolution_X,conf.Resolution_Y)*absMaxToPrint+0.1,...
-%             'FaceAlpha','interp',...
-%             'AlphaDataMapping','none',...
-%             'AlphaData',MUrelalpha(:,:,1),...
-%             'LineStyle','none',...
-%             'FaceColor','blue');
-%     hold off
-%     colorbar;
-%     caxis([-0.5,0.5])
-%     view(2)
-%     frame = getframe;
-%     writeVideo(v,frame);
 
 %Save current fields as old fields for next iteration
     prev.Ez=results.Ez;prev.Hx=results.Hx;prev.Hy=results.Hy;
     
-  %Track 1st nonzero source value and its evolution over 1 line until reflection  
-    if i>=2 && i < sz(1)/2 && i< sz(2)/2
-        E_fields(:,:,i-1)=prev.Ez; %Used to see the evolution manually
-        E_temp=[E_temp prev.Ez(meter2index(sX,conf)+i-1,meter2index(sY,conf)+1)]; %Save E_field evolution on 1 row. 
-       
-    end
-    %H field follows a time instance later
-    if i>=3 && i < sz(1)/2+1 && i< sz(2)/2+1
-        Hx_temp=[Hx_temp prev.Hx(meter2index(sX,conf)+i-2,meter2index(sY,conf)+1)];
-        Hy_temp=[Hy_temp prev.Hy(meter2index(sX,conf)+i-2,meter2index(sY,conf)+1)];    
-    end
+    E_fields(:,:,i)=prev.Ez;
+    Hx_fields(:,:,i)=prev.Hx;
+    Hy_fields(:,:,i)=prev.Hy;
 end
+%Get line
+E_line = squeeze(E_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc):end-1));%src_i+(yind-sourceYloc)
+Hx_line = squeeze(Hx_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc)+1:end));
+Hy_line = squeeze(Hy_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc)+1:end));
 
+% for i=1:size(Hx_line,1)
+%    E_temp(i)= E_line(i,i); 
+%    Hx_temp(i)= Hx_line(i,i); 
+%    Hy_temp(i)= Hy_line(i,i); 
+% end
+for i=1:size(Hx_line,1)
+   [E_temp(i) j]= max(E_line(i,:)); 
+   Hx_temp(i)= Hx_line(i,j); 
+   Hy_temp(i)= Hy_line(i,j); 
+end
+% E_temp=E_temp(73:85);
+% Hx_temp=Hx_temp(73:85);
+% Hy_temp=Hy_temp(73:85);
 %% Calculation of energy
-H_total = [Hx_temp' Hy_temp' zeros(size(Hx_temp,2),1)];
-E_total = [zeros(size(E_temp,2),1) zeros(size(E_temp,2),1) E_temp'];
-P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(4*pi*1e-7);
+P = abs(sqrt(Hx_temp'.^2+Hy_temp'.^2)).*abs(E_temp');%./(4*pi*1e-7);
+P=P(1:100);
 % In theory you should divide by mu but here it is not necessary because we
 % are only interested in the proportionality to 1/r^2.
-
+mainPRatio = P(1:end)./ P(1);
+figure
+plot(mainPRatio)
 % %% Free videofile
 % close(gcf)
 % close(v)
@@ -204,20 +176,40 @@ P = abs(sqrt(H_total(:,1).^2+H_total(:,2).^2)).*abs(E_total(:,3));%./(4*pi*1e-7)
 %% Calculating ratios
 ratio = E_temp(2:end)./ E_temp(1:end-1);
 r = 1:numel(P)+1;
+% r = linspace(y,conf.x_length,size(E_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc):end-1),2));
+% r = linspace(yind,meter2index(conf.x_length,conf),size(E_fields(meter2index(sX,conf)+1,yind:end,src_i+(yind-sourceYloc):end-1),2))
+% r = y:y+ 100;
 mainRatio = E_temp(1:end)./ E_temp(1); %Compare with starting value;
 %% Plotting
 figure
-plot(ratio)
+yyaxis left
+plot(E_temp)
+hold on
+plot(E_temp(1)./r,'-o')
+yyaxis right
+plot(Hx_temp)
+plot(Hx_temp(1)./r,'*')
+legend('Ez','Ez(1)/r','Hx','Hx(1)/r')
+hold off
+
 figure
+plot(abs(Hy_temp))
+hold on
+plot(abs(Hy_temp(1))./r,'o')
+hold off
+
+figure
+r = y:delta:y+99*delta
 plot(P)
 hold on
-plot(P(1)./r./r,'*')
-% plot(P(1)./r,'*')
-legend('power ifo distance','P(1)/r^2')
+% plot(P(1)./r./r,'*')
+plot(P(1)./r,'*')
+legend('power ifo distance','P(1)/r')
 hold off
 xlabel('Distance from source (n*\delta)')
 ylabel('P = E.B/\mu_0')
 title('Evolution of power in function of distance to source.')
+cftool(r,P)
 % figure
 % plot(mainRatio)
 %% Output
